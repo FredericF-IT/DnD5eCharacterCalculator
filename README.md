@@ -7,3 +7,5 @@
 
 
 ## Subsection
+Please use:
+pip install scipy

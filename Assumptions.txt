@@ -1,0 +1,5 @@
+For this calcullator, we expect characters to make good choices.
+As we only look at martial characters, improving stats like Wisdom or Intelligence is sub-optimal, as they do not enhance our damage.
+Increasing an Ability Score only improves the Ability Modifier if the new Score is even.
+Taking ASI's will always increase at least one Modifier.
+We use point-buy to get our stats. We can never choose more then 15 in any Score.

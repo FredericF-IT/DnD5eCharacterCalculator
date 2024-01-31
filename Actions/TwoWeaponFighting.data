@@ -1,0 +1,4 @@
+Bonus Action
+Req: battleStats/weapon/wType = Light str
+After Attack
+StrToDamage: False
