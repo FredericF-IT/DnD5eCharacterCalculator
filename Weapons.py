@@ -1,7 +1,6 @@
 from scipy import stats
+from Attributes import AttributeType
 
-hitChanceBook = {}
-critChanceBook = {}
 class Dice:
     def parseDice(string: str) -> list[(int, int)]:
         weaponDice = []
@@ -20,29 +19,28 @@ class Dice:
         return averageDamage
 
 class Weapon:
-    def __init__(self, wType: str, damageDice: [(int, int)]) -> None:
+    def __init__(self, wType: str, damageDice: [(int, int)], usedMod: AttributeType) -> None:
         self.wType = wType
         self.damageDice = damageDice
         self.averageHitDamage = Dice.averageValueForDice(damageDice)
+        self.usedMod = usedMod
+    
+    def caclulateHitChances() -> dict[(int, bool, int), float]:
+        hitChanceBook = {}
+        for diffAcToHit in range(-11, 31):
+            for critRange in range(18, 21):
+                chance = min(max(21-diffAcToHit, 21-critRange), 19)/20
+                hitChanceBook[(diffAcToHit, False, critRange)] = round(chance, 6)
+                hitChanceBook[(diffAcToHit, True, critRange)] = round(chance * (2 - chance), 6)
+        return hitChanceBook
 
-    def hitChance(enemyAC: int, toHit: int, advantage: bool, critRange: int):
-        chance = hitChanceBook.get((enemyAC, toHit, critRange), -1)
-        if(chance == -1):
-            chance = min(max(21-(enemyAC-toHit), 21-critRange), 19)/20
-            hitChanceBook[(enemyAC, toHit, critRange)] = chance
-        if(advantage):
-            chance = chance * 2 - chance ** 2
-        return chance
-
-    def critChance(critRangeStarts:int, advantage: bool):
-        chance = critChanceBook.get((critRangeStarts, advantage), -1)
-        if(chance == -1):
+    def caclulateCritChances() -> dict[(int, bool), float]:
+        critChanceBook = {}
+        for critRangeStarts in range(18, 21):
             chance = 1-(critRangeStarts-1)/20
-            critChanceBook[(critRangeStarts, False)] = chance
-        if(advantage):
-            chance = stats.binom.pmf(1, 2, chance) + stats.binom.pmf(1, 2, chance) # chance of getting 1 crit with two dice + chance of getting 2 crits with two dice
-            critChanceBook[(critRangeStarts, True)] = chance
-        return chance
+            critChanceBook[(critRangeStarts, False)] = round(chance, 6)
+            critChanceBook[(critRangeStarts, True)] = round(stats.binom.pmf(1, 2, chance) + stats.binom.pmf(1, 2, chance), 6) # chance of getting 1 crit with two dice + chance of getting 2 crits with two dice
+        return critChanceBook
     
     def __str__(self) -> str:
-        return self.wType + " " + " + ".join([str(number)+"d"+str(face) for (number, face) in self.damageDice])
+        return self.wType + " " + " + ".join([str(number)+"d"+str(face) for (number, face) in self.damageDice]) + " uses " + self.usedMod.name

@@ -1,4 +1,4 @@
 Bonus Action
 Req: battleStats/weapon/wType = Polearm str
 Damage: 1d4
-StrToDamage: True
+ModToDamage: True

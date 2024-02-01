@@ -3,76 +3,57 @@ from Features import Feature
 from CharSheet import Character
 from Features import Feature
 from Races import Race
-from Attributes import Attributes
+from Attributes import Attributes, AttributeType
+from Requirements import Requireable
 from Weapons import Weapon, Dice
-from Action import Action
+from Actions import Action
 from Feats import Feat
+from Classes import Class
 
 def getFiles(folder: str) -> list[str]:
     return [file for file in os.listdir("./"+folder) if file.split('.')[1] == "data"]
 
-def parseRace(lines: list[str], races: dict[str, Race], allFeatures: dict[str, Feature]):
-    i = 2
-    subracesLeft = True
-    while(subracesLeft):
-        name = lines[i-1]
-        stats = [0,0,0,0,0,0]
-        features = []
-        if(len(lines) > i+1 and lines[i+1] == "Stats"):
-            i += 2
-            line = lines[i]
-            while(line != "-----------"):
-                attr, value = line.split(" ")
+def getFiles(folder: str) -> list[str]:
+    return [file for file in os.listdir("./"+folder) if file.split('.')[1] == "data"]
 
-                if(attr == "All"):
-                    stats = [stat+1 for stat in stats]
-                else:
-                    stats[Attributes.ATTRS[attr]] = int(value)
-                i += 1
-                line = lines[i]
-        if(len(lines) > i+1 and lines[i+1] == "Features"):
-            i += 2
-            line = lines[i]
-            while(line != "-----------"):
-                featureName, value = line.split(" ")
-                feature = allFeatures[featureName].getCopy()
-                feature.supplyValues([value])
-                features.append(feature)
-                i += 1
-                line = lines[i]
-        subracesLeft = len(lines) > i+3 and lines[i+2] == "Type"
-        i += 4
-        races[name] = Race(name, stats, features)
+
+def getFilesAndFolders(folder: str) -> list[str]: # only for better readable folder structure
+    files = [file for file in os.listdir("./"+folder) if ('.' in file and file.split('.')[1] == "data")]
+    folders = [file for file in os.listdir("./"+folder) if os.path.isdir("./"+folder+"/"+file)]
+    for folderName in folders:
+        files += [folderName+"/"+file for file in getFilesAndFolders(folder+"/"+folderName)]
+    return files
 
 def getRaces(allFeatures: dict[str, Feature]) -> dict[str, Race]:
     races = {}
     for file in getFiles("Races"):
-        with open("./Races/"+file) as f:
-            parseRace([file.rstrip() for file in f.readlines()], races, allFeatures)
+        with open("./"+"Races/"+file) as f:
+            Race.parseRace([file.rstrip() for file in f.readlines()], races, allFeatures)
     return races
 
 
 def getFeatures() -> dict[str, Feature]:
     features = {}
-    for file in getFiles("Features"):
-        with open("./Features/"+file) as f:
-            name = file.split(".")[0]
-            (effects, values) = Feature.parseEffectsValues(f.readlines())
+    for file in getFilesAndFolders("Features"):
+        with open("./"+"Features/"+file) as f:
+            name = file.split("/")[-1].split(".")[0]
+            (effects, values) = Feature.parseEffectsValues([file.rstrip() for file in f.readlines()])
             features[name] = Feature(name, effects, values)
     return features
 
 def getWeapons() -> dict[str, Weapon]:
     weapons = {}
-    with open("./Tables/Weapons.data") as f:
+    with open("./"+"Tables/Weapons.data") as f:
         for line in f.readlines():
-            wType, diceString = line.rstrip().split(" ")
-            weapons[wType] = Weapon(wType, Dice.parseDice(diceString))
+            wType, diceString, modType = line.rstrip().split(" ")
+            weapons[wType] = Weapon(wType, Dice.parseDice(diceString), AttributeType(modType))
     return weapons
 
 def getActions() -> dict[str, Action]:
+    Action.initStaticData()
     actions = {}
     for file in getFiles("Actions"):
-        with open("./Actions/"+file) as f:
+        with open("./"+"Actions/"+file) as f:
             name = file.split(".")[0]
             f = [file.rstrip() for file in f.readlines()]
             (resource, addStrToDamage, requirements, damageDieOverride) = Action.parseAction(f)
@@ -82,61 +63,95 @@ def getActions() -> dict[str, Action]:
 def getFeats(actions: dict[str, Action], features: dict[str, Feature]) -> dict[str, Feat]:
     feats = {}
     for fileName in getFiles("Feats"):
-        with open("./Feats/"+fileName) as file:
+        with open("./"+"Feats/"+fileName) as file:
             name = fileName.split(".")[0]
             lines = [file.rstrip() for file in file.readlines()]
             feats[name] = Feat(name, lines, actions, features)
     return feats
 
-def printDict(dictionary: dict):
-    for key in dictionary.keys():
-        print(dictionary[key])
-
-features = getFeatures()
-printDict(features)
-print("\n")
-races = getRaces(features)
-printDict(races)
-print("\n")
-
-weapons = getWeapons()
-printDict(weapons)
-print("\n")
-
-actions = getActions()
-printDict(actions)
-print("\n")
+def getClasses(features: dict[str, Feature]) -> dict[str, Class]:
+    classes = {}
+    for fileName in getFiles("Classes"):
+        with open("./"+"Classes/"+fileName) as file:
+            name = fileName.split(".")[0]
+            lines = [file.rstrip() for file in file.readlines()]
+            classes[name] = Class(name, lines, features)
+    return classes
 
 
-feats = getFeats(actions, features)
-printDict(feats)
-print("\n")
+if __name__ == "__main__":
+    def printDict(dictionary: dict):
+        for key in dictionary.keys():
+            print(dictionary[key])
 
-def CreateVariants(races: dict[str, Race], weapons: dict[str, Weapon]):
-    return
+    features = getFeatures()
+    printDict(features)
+    print("\n")
 
-def testAvailable(actions: list[Action], character: Character):
-    print("Using:", character.battleStats.weapon.wType)
-    for action in actions:
-        print(("  Can get " if action.isAvailable(character) else "  Can't get ") + action.name)
-    print("")
+    races = getRaces(features)
+    printDict(races)
+    print("\n")
 
+    weapons = getWeapons()
+    printDict(weapons)
+    print("\n")
 
-chare = Character(Attributes([15, 14, 15, 8, 8, 10]), races["Dragonborn"], weapons["Greataxe"], set([actions["Attack"]]))
-chareB = Character(Attributes([15, 14, 15, 8, 8, 10]), races["Half-Orc"], weapons["Polearm"], set([actions["Attack"]]))
-chareC = Character(Attributes([15, 14, 15, 8, 8, 10]), races["Dragonborn"], weapons["Light"], set([actions["Attack"]]))
+    actions = getActions()
+    printDict(actions)
+    print("\n")
 
-testAvailable(actions.values(), chare)
-testAvailable(actions.values(), chareB)
-testAvailable(actions.values(), chareC)
+    feats = getFeats(actions, features)
+    printDict(feats)
+    print("\n")
 
-chareB.printCharacter()
+    classes = getClasses(features)
+    printDict(classes)
+    print("\n")
 
-chareB.battleStats.flatDamageBonus += 2
-print("Before", chareB.battleStats.flatDamageBonus, chareB.battleStats.flatToHitBonus)
-print(actions["Attack"].executeAttack(chareB.attr, chareB.battleStats, 19, False))
-print(actions["Attack"].executeAttack(chareB.attr, chareB.battleStats, 9, False))
-feats["Great Weapon Master"].applyToCharacter(chareB)
-print("After", chareB.battleStats.flatDamageBonus, chareB.battleStats.flatToHitBonus)
-print(actions["Attack"].executeAttack(chareB.attr, chareB.battleStats, 19, False))
-print(actions["Attack"].executeAttack(chareB.attr, chareB.battleStats, 9, False))
+    def testAvailable(reqThing: list[Requireable], character: Character, isWeapon=True):
+        if(isWeapon):
+            print("Using:", character.battleStats.weapon.wType)
+        for thing in reqThing:
+            print(("  Can use " if thing.isAvailable(character) else "  Can't use ") + thing.name)
+        print("")
+
+    if(False): # not as usefull
+        characters = []
+        for weapon in weapons.values():
+            characters.append(Character(Attributes([15, 14, 15, 8, 8, 10]), races["Dragonborn"], weapon, set([actions["Attack"]]), classes["Barbarian"]))
+
+        print("Actions for weapons:")
+        for chare in characters:
+            testAvailable(actions.values(), chare)
+
+        print("Feats for weapons:")
+        for chare in characters:
+            testAvailable(feats.values(), chare)
+
+    chareSpecial = Character(Attributes([15, 14, 15, 8, 8, 10]), races["Half-Orc"], weapons["Polearm"], set([actions["Attack"]]), classes["Barbarian"])
+    chareSpecial.printCharacter()
+    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    for i in range(4):
+        chareSpecial.increaseClass(classes["Barbarian"])
+    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    for i in range(9):
+        chareSpecial.increaseClass(classes["Fighter"])
+    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    for i in range(3):
+        chareSpecial.increaseClass(classes["Fighter"])
+    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    for i in range(3):
+        chareSpecial.increaseClass(classes["Barbarian"])
+    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    chareSpecial.printCharacter()
+
+    print("Classes for Stats:")
+    testAvailable(classes.values(), chareSpecial, False)
+
+    print("Before", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
+    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
+    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))
+    feats["Great Weapon Master"].applyToCharacter(chareSpecial)
+    print("After", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
+    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
+    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))

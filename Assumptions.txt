@@ -3,3 +3,6 @@ As we only look at martial characters, improving stats like Wisdom or Intelligen
 Increasing an Ability Score only improves the Ability Modifier if the new Score is even.
 Taking ASI's will always increase at least one Modifier.
 We use point-buy to get our stats. We can never choose more then 15 in any Score.
+Weapons are not changed.
+Some abilities are asumed to be always active, like the Barbarian's rage giving advantage, or the Rogue's sneak attack from having adavantage (starting level 2).
+Many weapon types are reduced to their properties + damage dice, as many weapons differ only in flavour or damage type.

@@ -1,0 +1,9 @@
+Req: attr/getStat(Str=attrTpye) > 13 int
+Lvl: 1: Rage
+Lvl: 2: RecklessAttack
+Lvl: 3: Subclass
+Lvl: 4: ASI
+Lvl: 5: ExtraAttack>Barbarian=str
+Lvl: 9: ExtraCritDice>1
+Lvl: 13: ExtraCritDice>1
+Lvl: 17: ExtraCritDice>1

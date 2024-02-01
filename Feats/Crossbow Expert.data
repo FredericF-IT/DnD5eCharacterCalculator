@@ -1,0 +1,2 @@
+Req: battleStats/weapon/wType = CrossbowOneHand str
+Action: CrossbowExpertAttack

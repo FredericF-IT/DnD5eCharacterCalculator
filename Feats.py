@@ -1,5 +1,5 @@
 from Requirements import Requirement, Requireable
-from Action import Action
+from Actions import Action
 from Features import Feature
 from CharSheet import Character
 
@@ -10,7 +10,7 @@ class Feat(Requireable):
         self.actions = set[Action]()
         self.features = []
         for line in lines:
-            words = line.lstrip().split(" ")
+            words = line.split(" ")
             if(words[0] == "Req:"):
                 self.requirements.append(Requirement(words[1], words[2], words[3], words[4]))
             elif(words[0] == "Action:"):
@@ -18,7 +18,7 @@ class Feat(Requireable):
             elif(words[0] == "Feature:"):
                 feature = features[words[1]].getCopy()
                 self.features.append(feature)
-  
+    
     def applyToCharacter(self, character: Character):
         character.applyFeatures(self.features)
         character.actions.union(self.actions)

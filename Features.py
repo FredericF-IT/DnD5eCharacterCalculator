@@ -1,6 +1,3 @@
-#from CharSheet import Character
-# Undo comment to see variables from character here, but dont keep during compile, as it results in a circular reference
-
 class Feature:
     effects = []
     values = []
@@ -12,26 +9,32 @@ class Feature:
     def parseEffectsValues(lines: list[str]) -> (str, str):
         effects, values = [], []
         for line in lines:
-            effect = line.rstrip().split(" ")
+            effect = line.split(" ")
             effects.append(effect[0])
             if len(effect) == 2:
                 values.append(effect[1])
         return (effects, values)
-
-    def supplyValues(self, values: list[str]):
-        self.values = values                                            # TODO split values
-
-    def getCopy(self):
-        return Feature(self.name, self.effects, self.values)
-
-    def applyFeatures(self, character):
+    
+    def applyFeature(self, character):
         assert len(self.effects) == len(self.values)
         for i, effect in enumerate(self.effects):
-            variable = character.getVariable(effect)
             value = self.values[i]
-            if(type(variable) is int):
-                value = int(value)
+            if("?" in effect):
+                effect = effect.replace("?", value)
+            variable = character.getVariable(effect)
+            if(variable == None): 
+                character.setVariable(effect, value)
+                return
+            
+            value = type(variable)(value)
+            
             character.setVariable(effect, variable + value)
+
+    def supplyValues(self, values: list[str]):
+        self.values = values                                            # TODO perhaps remove
+
+    def getCopy(self):
+        return Feature(self.name, self.effects.copy(), self.values.copy())
 
     def __str__(self) -> str:
         return self.name

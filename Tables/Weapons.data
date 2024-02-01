@@ -1,5 +1,8 @@
-Greataxe 1d12
-Greatsword 2d6
-Polearm 1d10
-OneHanded 1d8
-Light 1d6
+Greataxe 1d12 Str
+Greatsword 2d6 Str
+Polearm 1d10 Str
+OneHanded 1d8 Str
+Light 1d6 Str
+Finesse 1d8 Dex
+CrossbowOneHand 1d6 Dex
+CrossbowHeavy 1d10 Dex

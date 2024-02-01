@@ -1,0 +1,6 @@
+Req: attr/getStat(Str=attrTpye) > 13 int
+Lvl: 3: Subclass
+Lvl: 4: ASI
+Lvl: 5: ExtraAttack>Fighter=str
+Lvl: 11: ExtraAttack>Fighter=str
+Lvl: 20: ExtraAttack>Fighter=str

@@ -1,0 +1,3 @@
+Bonus Action
+Req: battleStats/weapon/wType = CrossbowOneHand str
+ModToDamage: True
