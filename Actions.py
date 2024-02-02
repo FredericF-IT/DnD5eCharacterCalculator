@@ -49,17 +49,20 @@ class Action(Requireable):
         toHit = battleStats.profBonus + mod + battleStats.flatToHitBonus                                          # TODO Add magic item bonus
         hitChance = Action.hitChanceBook[(enemyAC-toHit, advantage, battleStats.critRange)]
         critChance = Action.critChanceBook[(battleStats.critRange, advantage)]
-        #print(toHit, hitChance, critChance)
-        #extraDamageDice = 0
-        #for (dieCount, dieFace) in self.otherDamageDice:
-        #    extraDamageDice += Dice.averageDamageForDie(dieFace, dieCount)
-        hitDamage = (self.alterDice if self.ignoreWeaponDice else weapon.averageHitDamage)# + extraDamageDice
+        otherDamageDice = 0
+        for (dieCount, dieFace) in battleStats.extraDamageDice.items():
+            otherDamageDice += Dice.averageDamageForDie(dieFace, dieCount)
+        print(otherDamageDice)
+        hitDamage = (self.alterDice if self.ignoreWeaponDice else weapon.averageHitDamage) + otherDamageDice
         critDamage = hitDamage * battleStats.critDice
         
         straightBonus = (mod if self.modToDamage else 0) + battleStats.flatDamageBonus
-        #print(hitDamage + straightBonus, critDamage + straightBonus)
-        damagePerHit = critChance * critDamage + (1 - critChance) * hitDamage + straightBonus
-        damagePerAttack = damagePerHit * hitChance
+        damagePerAttack = critChance * critDamage + (hitChance - critChance) * hitDamage + straightBonus
+        """
+        critChance is the likelihood of having a crit side on the die, times the damage done on a crit.
+        (hitChance - critChance) gives us the likelihood where we hit and do normal damage.
+        straightBonus is not affected by crits, they only double the dice. 
+        """
 
         if(self.name == "Attack"): # Only the basic attack action qualifies for extra attack
             return damagePerAttack * battleStats.attacksPerAction

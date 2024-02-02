@@ -9,6 +9,6 @@ Type
 Variant Human
 -----------
 Features
-FeatChoice 1
-ChooseIncrease 1In2
+FeatChoice
+ChooseIncrease>1In2
 -----------

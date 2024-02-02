@@ -1,2 +1,2 @@
-battleStats/flatDamageBonus 10
-battleStats/flatToHitBonus -5
+var[battleStats/flatDamageBonus 10 int]
+var[battleStats/flatToHitBonus -5 int]

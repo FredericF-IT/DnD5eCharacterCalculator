@@ -1,1 +1,1 @@
-battleStats/flatDamageBonus 2
+var[battleStats/flatDamageBonus 2 int]

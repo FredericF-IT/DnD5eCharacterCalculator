@@ -37,10 +37,10 @@ class Race:
                 i += 2
                 line = lines[i]
                 while(line != "-----------"):
-                    featureInfo = line.split(" ")
+                    featureInfo = line.split(">")
                     feature = allFeatures[featureInfo[0]].getCopy()
-                    if(not len(featureInfo) == 1):
-                        feature.supplyValues(featureInfo[1:])
+                    if(len(featureInfo) > 1):
+                        feature.fillInValues(featureInfo[1].split(":"))
                     features.append(feature)
                     i += 1
                     line = lines[i]

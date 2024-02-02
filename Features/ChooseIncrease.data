@@ -1,1 +1,1 @@
-attr/choices
+var[attr/choices ? str]

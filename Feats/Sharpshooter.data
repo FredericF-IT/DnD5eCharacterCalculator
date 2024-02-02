@@ -1,2 +1,2 @@
-Req: battleStats/weapon/wType = CrossbowTH|CrossbowOH str
+Req: var[battleStats/weapon/wType] = CrossbowTH|CrossbowOH str
 Feature: GreatWeaponMasterTradeoff

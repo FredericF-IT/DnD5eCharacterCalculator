@@ -1,2 +1,2 @@
-Req: battleStats/weapon/wType = CrossbowOneHand str
+Req: var[battleStats/weapon/wType] = CrossbowOneHand str
 Action: CrossbowExpertAttack

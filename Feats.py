@@ -20,7 +20,7 @@ class Feat(Requireable):
                 self.features.append(feature)
     
     def applyToCharacter(self, character: Character):
-        character.applyFeatures(self.features)
+        character.applyFeatures(self.features, True)
         character.actions.union(self.actions)
 
     def __str__(self) -> str:
