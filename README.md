@@ -7,13 +7,13 @@
 
 
 ## Subsection
-Please use:
-pip install scipy
-Possibly needed dependent on OS:
-sudo apt-get install python3-tk
-sudo apt-get install python3-pillow
-sudo apt-get install python3-pil.imagetk
-It may happen that the program gives youu the error "_tkinter.TclError: couldn't connect to display "<whatever>"
-You can fix this by using this
-export DISPLAY=:0
-with the number that responds to the appropriate monitor.
+Please use:  
+pip install scipy  
+Possibly needed dependent on OS:  
+sudo apt-get install python3-tk  
+sudo apt-get install python3-pillow  
+sudo apt-get install python3-pil.imagetk  
+It may happen that the program gives you the error "_tkinter.TclError: couldn't connect to display "whatever"  
+You can fix this by using this  
+export DISPLAY=:0  
+with the number that responds to the appropriate monitor.  
