@@ -7,24 +7,38 @@ from Features import Feature, Value
 from Races import Race
 from BattleStats import BattleStats
 from Classes import Class, ClassList
+from Actions import Action
 
 class Character:
-    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set, startingClass: Class) -> None:
+    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set[Action], startingClass: Class, isEmpty:bool=False) -> None:
+        if(isEmpty):
+            return
         self.attr = attr
+        self.damageHistory = []
         self.gottenFeatures = []
         self.battleStats = BattleStats(weapon)
         self.race = race
         self.actions = actions
-        self.attr.addStatBonus(race.getStatBonus())
         self.applyFeatures(race.getRaceFeatures())
-       # self.applyFeatures(startingClass.getFeaturesAtLevel(0))
+        self.attr.addStatBonus(race.getStatBonus())
         self.classes = ClassList(startingClass, self)
         assert len(self.classes.classesInOrderTaken) == 1
-        if(not self.attr.choices == ""):
+        if not (self.attr.choices == ""):
             self.attr.calculateChoices() # character has applied his feautures now, so we always know if they have some first level stat choice.
 
-    def applyFeatures(self, features: list, addToFeatureList:bool=False):
-        if(addToFeatureList): self.gottenFeatures.extend(features)
+    def makeCharacter(attr: Attributes, battleStats: BattleStats, race: Race, actions: Action, classes: ClassList, gottenFeatures: list[Feature], damageHistory: list[int]):
+        newChar = Character(None, None, None, None, None, True)
+        newChar.attr = attr
+        newChar.battleStats = battleStats
+        newChar.race = race
+        newChar.actions = actions
+        newChar.classes = classes
+        newChar.gottenFeatures = gottenFeatures
+        newChar.damageHistory = damageHistory
+        return newChar
+
+    def applyFeatures(self, features: list): #, addToFeatureList:bool=False
+        #if(addToFeatureList): self.gottenFeatures.extend([feature.name for feature in features])
         for feature in features:
             Feature.applyFeature(feature, self)
 
@@ -33,11 +47,17 @@ class Character:
         self.classes.increaseClass(newClassLevel, self)
 
     def printCharacter(self):
-        print(self.race.name, self.battleStats.level)
-        print(self.classes)
-        print(self.attr)
-        print(self.battleStats.weapon)
+        print(self)
 
+    def __str__(self) -> str:
+        return  self.race.name +" Level "+ str(self.battleStats.level) + "\n" +\
+                str(self.classes)  + "\n" +\
+                str(self.attr)  + "\n" +\
+                "Feats: "+", ".join([feat for feat in self.gottenFeatures])  + "\n" +\
+                ("Has advantage on Attacks.\n" if self.battleStats.getsAdvantage else "") +\
+                str(self.battleStats)  + "\n" +\
+                str(self.battleStats.weapon)
+                
 
     def getVariable(self, path: str):
         current = self
@@ -85,23 +105,18 @@ class Character:
         getattr(current, dictName)[arguments] = newValue
 
     def getCopy(self) -> 'Character':
-        #copyChar = deepcopy(self)
-        newAttr = self.attr.getCopy()
-        newAttr.boni = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
-        newAttr.choices = ""
-        copyChar = Character(newAttr, self.race, self.battleStats.weapon, self.actions.copy(), self.classes.classesInOrderTaken[0])
-        
+        return Character.makeCharacter(self.attr.getCopy(), self.battleStats.getCopy(), self.race, self.actions, self.classes.getCopy(), self.gottenFeatures.copy(), self.damageHistory.copy())
+        """copyChar = Character(Attributes([0, 0, 0, 0, 0, 0]), self.race, self.battleStats.weapon, self.actions.copy(), self.classes.classesInOrderTaken[0], True, self.classes.getCopy())
+        copyChar.attr = self.attr.getCopy()
+        print(self.battleStats)
+        print(copyChar.battleStats)
+        #copyChar.classes = self.classes.getCopy(copyChar)
         assert self.classes == copyChar.classes
-        assert len(copyChar.classes.classesInOrderTaken) == len(self.classes.classesInOrderTaken) 
+        assert self.attr == copyChar.attr
+        assert self.battleStats == copyChar.battleStats
         assert self == copyChar
-        #for i, bonus in enumerate(copyChar.attr.boni.values()):
-        #    assert bonus == self.attr.boni.values()[i]
-        #copyChar.attr = self.attr.getCopy()
-        #copyChar.battleStats = self.battleStats.getCopy()
-        #self.classes.getCopy(copyChar)
-        return copyChar
+        return copyChar"""
     
-
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, Character):
             return NotImplemented

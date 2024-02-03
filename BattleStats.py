@@ -1,4 +1,5 @@
 from math import ceil
+from inspect import getmembers, isroutine
 from Weapons import Weapon
 
 class BattleStats:
@@ -12,6 +13,7 @@ class BattleStats:
     flatDamageBonus = 0
     flatToHitBonus = 0
     extraDamageDice = dict[int, int]()
+    getsAdvantage = False
 
     def __init__(self, weapon: Weapon) -> None:
         self.weapon = weapon
@@ -25,7 +27,40 @@ class BattleStats:
         self.attacksPASource[sourceClass] = self.attacksPASource.get(sourceClass, 1) + 1
         self.attacksPerAction = max(self.attacksPASource.values())
 
+    def getCopy(self):
+        #variables = getmembers(BattleStats, lambda a:not(isroutine(a)))
+        #variablesOnly = [a for a in variables if not(a[0].startswith('__') and a[0].endswith('__'))]
+        newBattleStats = BattleStats(self.weapon)
+        """for variable in variablesOnly:
+            if(type(variable[1]) == dict):
+                setattr(newBattleStats, variable[0], variable[1].copy())
+            else:
+                setattr(newBattleStats, variable[0], variable[1])
+            print(variable)
+            print(getattr(self, variable[0]))
+        assert self == newBattleStats
+        return newBattleStats"""
+        newBattleStats.level = self.level
+        newBattleStats.attacksPASource = self.attacksPASource.copy()
+        newBattleStats.attacksPerAction = self.attacksPerAction
+        newBattleStats.critDice = self.critDice
+        newBattleStats.critRange = self.critRange
+        newBattleStats.firstLevelFeat = self.firstLevelFeat
+        newBattleStats.profBonus = self.profBonus
+        newBattleStats.flatDamageBonus = self.flatDamageBonus
+        newBattleStats.flatToHitBonus = self.flatToHitBonus
+        newBattleStats.weapon = self.weapon
+        newBattleStats.extraDamageDice = self.extraDamageDice.copy()
+        newBattleStats.getsAdvantage = self.getsAdvantage
+        return newBattleStats
 
+    def __str__(self) -> str:
+        return  "Attacks per action: " + str(self.attacksPerAction) + "\n"+\
+                "Crit range: " + str(self.critRange) + " Crit dice: " + str(self.critDice) + "\n"+\
+                "Damage bonus: " + str(self.flatDamageBonus) + " toHit bonus " + str(self.flatToHitBonus) + "\n"+\
+                "Proficiency Bonus: " + str(self.profBonus) + "\n"+\
+                "Other dice: " + ", ".join([str(x[0])+"d"+str(x[1]) for x in self.extraDamageDice.items()])
+    
     # Dice can also easily removed by using a negative number oof dice.
     # This is usefull for upgrading features, as you may have an increase from 2d6 to 2d8 etc.
     def addExtraDamageDie(self, dice: list[(int, int)]):
@@ -44,4 +79,6 @@ class BattleStats:
                 self.profBonus == __value.profBonus and \
                 self.flatDamageBonus == __value.flatDamageBonus and \
                 self.flatToHitBonus == __value.flatToHitBonus and \
-                self.weapon == __value.weapon
+                self.weapon == __value.weapon and \
+                self.extraDamageDice == __value.extraDamageDice and \
+                self.getsAdvantage == __value.getsAdvantage

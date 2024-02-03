@@ -120,4 +120,4 @@ class Feature:
         return Feature(self.name, deepcopy(self.varChanges), deepcopy(self.methodCalls), self.subFeatures.copy()) # first two need deepcopy as they are tuples in a list, the last one is just a list of Values
     
     def __str__(self) -> str:
-        return self.name
+        return self.name + ": " + ", ".join([varChange[0]+"="+str(varChange[1]) for varChange in self.varChanges])

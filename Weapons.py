@@ -23,6 +23,7 @@ class Weapon:
         self.wType = wType
         self.damageDice = damageDice
         self.averageHitDamage = Dice.averageValueForDice(damageDice)
+        self.averageHitDamageOneDie = Dice.averageValueForDice([(1, x[1]) for x in damageDice]) # Crit bonuses only apply to one damage die, meaning a crit with +1 crit dice on a 2d6 sword does 5d6, not 6d6.
         self.usedMod = usedMod
     
     def caclulateHitChances() -> dict[(int, bool, int), float]:
@@ -48,7 +49,7 @@ class Weapon:
         for critRangeStarts in range(18, 21):
             chance = 1-(critRangeStarts-1)/20
             critChanceBook[(critRangeStarts, False)] = round(chance, 6)
-            critChanceBook[(critRangeStarts, True)] = round(stats.binom.pmf(1, 2, chance) + stats.binom.pmf(1, 2, chance), 6) # chance of getting 1 crit with two dice + chance of getting 2 crits with two dice
+            critChanceBook[(critRangeStarts, True)] = round(stats.binom.pmf(1, 2, chance) + stats.binom.pmf(2, 2, chance), 6) # chance of getting 1 crit with two dice + chance of getting 2 crits with two dice
         return critChanceBook
     
     def __str__(self) -> str:

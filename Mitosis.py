@@ -75,7 +75,7 @@ class CombinationExplorer:
                 statCombinations.extend(CombinationExplorer.getOkayStatCombinations(copyOfStats, pointsLeftB, current))
         return statCombinations
     
-    def createAttributes(self) -> dict[Class, list[Attributes]]:
+    def createAttributes(self, onlyGoodStats: bool) -> dict[Class, list[Attributes]]:
         attributes = dict[Class, Attributes]()
         for startingClass in self.classes:
             usefullness = startingClass.statUsefullness
@@ -134,31 +134,34 @@ class CombinationExplorer:
                 else:
                     statCombinationsV2.extend(statCombination)
 
-            statCombinationsV3 = []
-            for statCombination in statCombinationsV2:
-                if(Usefullness.Okay in importance): # Any stat that is not a dump stat can now get some points
-                    pointsLeft = statCombination[0]
-                    goodStatsLeft = list(importance).count(Usefullness.Okay)
-                    goodStats = []
-                    lastIndex = 0
-                    for i in range(goodStatsLeft):
-                        lastIndex = list(importance).index(Usefullness.Okay, lastIndex)
-                        goodStats.append(keys[lastIndex])
-                        lastIndex += 1
-                        
-                    statCombinationsV3.extend(CombinationExplorer.getOkayStatCombinations(goodStats, pointsLeft, statCombination[1]))
-                else:
-                    statCombinationsV3.append(statCombination)
+            if not(onlyGoodStats):
+                statCombinationsV3 = []
+                for statCombination in statCombinationsV2:
+                    if(Usefullness.Okay in importance): # Any stat that is not a dump stat can now get some points
+                        pointsLeft = statCombination[0]
+                        goodStatsLeft = list(importance).count(Usefullness.Okay)
+                        goodStats = []
+                        lastIndex = 0
+                        for i in range(goodStatsLeft):
+                            lastIndex = list(importance).index(Usefullness.Okay, lastIndex)
+                            goodStats.append(keys[lastIndex])
+                            lastIndex += 1
+                            
+                        statCombinationsV3.extend(CombinationExplorer.getOkayStatCombinations(goodStats, pointsLeft, statCombination[1]))
+                    else:
+                        statCombinationsV3.append(statCombination)
 
-            for i in range(6):
-                statCombinationsV3 = sorted(statCombinationsV3, key=lambda tup: tup[5-i])
+                for i in range(6):
+                    statCombinationsV3 = sorted(statCombinationsV3, key=lambda tup: tup[5-i])
 
-            attributes[startingClass] = [Attributes(stats) for stats in statCombinationsV3]
+                attributes[startingClass] = [Attributes(stats) for stats in statCombinationsV3]
+            else:
+                attributes[startingClass] = [Attributes(stats[1]) for stats in statCombinationsV2]
         return attributes
     
     seenvariations = dict[(list[AttributeType], int, int), list[list[int]]]()
 
-    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> list[list[int]]:
+    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> set[tuple[int]]:
         lastVersion = CombinationExplorer.seenvariations.get((possibleScores, getPlusX, yTimes), None)
         if(not lastVersion == None): 
             return lastVersion
@@ -177,51 +180,81 @@ class CombinationExplorer:
         CombinationExplorer.seenvariations[(possibleScores, getPlusX, yTimes)] = possibleVers
         return possibleVers
 
-    def findASIInvestment(usefullStats: list[AttributeType], usefullness, reversedUsefullness, exceptForIn: set[int], getPlusX: int, yTimes: int, character: Character) -> list[Character]:
-        newCharacters = []
-        for stat in usefullStats.difference(exceptForIn): # TODO check if stat is maxed
-            possibleImprovements = []
+    def findPointDistribution(usefullness: list[AttributeType], usefullStats: set[AttributeType], reversedUsefullness, exceptForIn: set[int], getPlusX: int, yTimes: int, character: Character) -> list[Character]:
+        possibleImprovements = []
+        for stat in usefullStats.difference(exceptForIn):
             if((stat, Usefullness.Either) in usefullness):
                 eitherStat = reversedUsefullness[Usefullness.Either]
                 whichIsDump = 1
                 if (character.attr.getStat(eitherStat[0]) == 8): # check which is the dump stat
                     whichIsDump = 0
-                possibleImprovements = CombinationExplorer.getPossibleCombinations(tuple(usefullStats - set([eitherStat[1-whichIsDump]])), getPlusX, yTimes)
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(usefullStats - set([eitherStat[1-whichIsDump]])), getPlusX, yTimes))
             elif((stat, Usefullness.Both) in usefullness):
                 bothStats = reversedUsefullness[Usefullness.Both]
-                possibleImprovements = CombinationExplorer.getPossibleCombinations(tuple(bothStats), getPlusX, yTimes)
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(bothStats), getPlusX, yTimes))
             elif((stat, Usefullness.Main) in usefullness):
                 otherStat = reversedUsefullness[Usefullness.Good] # Assumes the class has at least one main and one good / usefull Ability Score
-                possibleImprovements = CombinationExplorer.getPossibleCombinations(tuple(stat, otherStat), getPlusX, yTimes)
-            else:
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(stat, otherStat), getPlusX, yTimes))
+
+        newCharacters = []
+        seenDict = []
+        for improvement in possibleImprovements:
+            if(improvement in seenDict):
                 continue
-            for improvement in possibleImprovements:
-                newCharacter = character.getCopy()
-                newCharacter.attr.addStatBonusList(improvement)
-                newCharacters.append(newCharacter)
+            seenDict.append(improvement)
+            newCharacter = character.getCopy()
+            newCharacter.attr.addStatBonusList(improvement)
+            newCharacters.append(newCharacter)
         return newCharacters
 
-    def createCharactersLvl1(self, actions: list[Action]) -> list[Character]:
+    def goodASIAssignment(usefullStats: list[AttributeType], exceptForIn: set[int], character: Character) -> list[Character]:
+        possibleImprovements = []
+        for stat in usefullStats.difference(exceptForIn): # TODO check if stat is maxed
+            scoreLeft = 20 - character.attr.getStat(stat)
+            if(scoreLeft > 1): # assign both in same
+                improvementFull = [0, 0, 0, 0, 0, 0]
+                improvementFull[positions[stat]] = 2
+                possibleImprovements.append(improvementFull)
+            if(scoreLeft > 0): # assign one here and one in another stat
+                improvementHalf = [0, 0, 0, 0, 0, 0]
+                improvementHalf[positions[stat]] = 1
+                for statB in usefullStats.difference(exceptForIn.union(set([stat]))):
+                    scoreLeftB = 20 - character.attr.getStat(statB)
+                    if(scoreLeftB >= 1):
+                        improvementFull = improvementHalf.copy()
+                        improvementFull[positions[statB]] = 1
+                        possibleImprovements.append(improvementFull)
+
+        newCharacters = []
+        seenDict = []
+        for improvement in possibleImprovements:
+            if(improvement in seenDict):
+                continue
+            seenDict.append(improvement)
+            newCharacter = character.getCopy()
+            newCharacter.attr.addStatBonusList(improvement)
+            newCharacters.append(newCharacter)
+        return newCharacters
+
+    def createCharactersLvl1(self, actions: list[Action], onlyGoodStats) -> list[Character]:
         characters = list[Character]()
         lastCharCount = 0
-        attributes = self.createAttributes()
+        attributes = self.createAttributes(onlyGoodStats)
+        baseActions = [actions["Attack"]]
         print("Stat combinations per class:")
         for key in attributes.keys():
             print(key.name, "has", len(attributes[key]), "good combinations.")
         print("Stats, Races, Classes, and Weapons, and first level choices:")
         for aClass in self.classes:
-            usefullness = [(stat) for stat in aClass.statUsefullness.items() if stat[1] in [Usefullness.Main, Usefullness.Both, Usefullness.Either, Usefullness.Good]]
-            usefullStats = set([stat[0] for stat in usefullness])
-            reversedUsefullness = dict[Usefullness, list[AttributeType]]()
-            for item in aClass.statUsefullness.items():
-                oldValue = reversedUsefullness.get(item[1], [])
-                oldValue.append(item[0])
-                reversedUsefullness[item[1]] = oldValue
+            usefullness, usefullStats, reversedUsefullness = aClass.getUsefulls()
 
             for race in self.races:
                 for weapon in self.weapons:
+                    actionsIfWeapon = baseActions.copy()
+                    if(weapon.wType == "light"):
+                        actionsIfWeapon.append(actions["TwoWeaponFighting"])
                     for stats in attributes[aClass]:
-                        newCharacter = Character(stats.getCopy(), race, weapon, set([actions["Attack"], actions["TwoWeaponFighting"]]), aClass)
+                        newCharacter = Character(stats.getCopy(), race, weapon, set(actionsIfWeapon), aClass)
                         newCharacters = []
                         if(newCharacter.battleStats.firstLevelFeat):
                             for feat in self.feats:
@@ -232,16 +265,14 @@ class CombinationExplorer:
                         newCharacters = newCharacters if not newCharacters == [] else [newCharacter]
                         for character in newCharacters:
                             if(newCharacter.attr.hasStartingChoice):
-                                getPlusX = newCharacter.attr.getX
-                                yTimes = newCharacter.attr.inY
-                                might = newCharacter.attr.unchoosable
-                                characters.extend(CombinationExplorer.findASIInvestment(usefullStats, usefullness, reversedUsefullness, might, getPlusX, yTimes, newCharacter))
+                                characters.extend(CombinationExplorer.findPointDistribution(usefullness, usefullStats, reversedUsefullness, newCharacter.attr.unchoosable, newCharacter.attr.getX, newCharacter.attr.inY, newCharacter))
                             else:
                                 characters.append(newCharacter)
 
 
             print(aClass.name, "has", len(characters)-lastCharCount, "good combinations.")
             lastCharCount = len(characters)
+        print(len(characters))
         for character in characters:
             for stat in AttributeType:
                 if(character.attr.getStat(stat) >= 18):
@@ -249,3 +280,33 @@ class CombinationExplorer:
                     character.printCharacter()
                     pass
                 assert character.attr.getStat(stat) < 18 # looking good
+        return characters
+    
+    def upgradeCharacterLevel(self, characters: list[Character]) -> list[Character]:
+        newCharacters = []
+        for aClass in self.classes:
+            for character in characters:
+                if not (aClass.canTakeClass(character)):
+                    continue
+                newCharacter = character.getCopy()
+                newCharacter.increaseClass(aClass)
+                if not (newCharacter.attr.ASIAvailable):
+                    newCharacters.append(newCharacter)
+                    continue
+
+                newCharacter.attr.ASIAvailable = False
+                
+                for feat in self.feats:
+                    if(feat.isAvailable(character)):
+                        featCharacter = newCharacter.getCopy()
+                        feat.applyToCharacter(featCharacter)
+                        newCharacters.append(featCharacter)
+                
+                baseClass = newCharacter.classes.getClassAtLevel(0)
+                usefullness, usefullStats, reversedUsefullness = baseClass.getUsefulls()
+                oldLength = len(newCharacters)
+                dumpStats = reversedUsefullness.get(Usefullness.Dump, [])
+                newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
+                newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
+                assert oldLength < len(newCharacters)
+        return newCharacters

@@ -139,9 +139,15 @@ if __name__ == "__main__":
 
     chareSpecial = Character(Attributes([15, 14, 15, 8, 8, 10]), races["Half-Elf"], weapons["Polearm"], set([actions["Attack"]]), classes["Barbarian"])
     chareSpecial.printCharacter()
+    print(chareSpecial.attr.ASIAvailable)
+    features["ASI"].applyFeature(chareSpecial)
+    print(features["ASI"])
+    print(chareSpecial.attr.ASIAvailable)
+    
     print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(4):
         chareSpecial.increaseClass(classes["Barbarian"])
+    
     print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(9):
         chareSpecial.increaseClass(classes["Barbarian"])
@@ -157,10 +163,10 @@ if __name__ == "__main__":
     print("Classes for Stats:")
     testAvailable(classes.values(), chareSpecial, False)
 
-    print("Before", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
-    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
-    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))
-    feats["Great Weapon Master"].applyToCharacter(chareSpecial)
-    print("After", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
-    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
-    print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))
+    #print("Before", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
+    #print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
+    #print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))
+    #feats["Great Weapon Master"].applyToCharacter(chareSpecial)
+    #print("After", chareSpecial.battleStats.flatDamageBonus, chareSpecial.battleStats.flatToHitBonus)
+    #print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 19, False))
+    #print(actions["Attack"].executeAttack(chareSpecial.attr, chareSpecial.battleStats, 9, False))

@@ -8,6 +8,9 @@ class ActionType(Enum):
     action = 'Action'
     bonusAction = 'Bonus Action'
 
+def printIf(condition: bool, *text: str):
+    if condition: print(*text)
+
 class Action(Requireable):
     hitChanceBook = dict[(int, bool, int), float]()
     critChanceBook = dict[(int, bool), float]()
@@ -43,21 +46,26 @@ class Action(Requireable):
                 modToDamage = lineParts[1] == "True"
         return (ActionType(lines[0]), modToDamage, requirements, damageDieOverride)
 
-    def executeAttack(self, attr: Attributes, battleStats: BattleStats, enemyAC: int, advantage: bool):
+    def executeAttack(self, attr: Attributes, battleStats: BattleStats, enemyAC: int, advantage: bool, doPrint:bool=False):
         weapon = battleStats.weapon
         mod = attr.getMod(weapon.usedMod)
         toHit = battleStats.profBonus + mod + battleStats.flatToHitBonus                                          # TODO Add magic item bonus
         hitChance = Action.hitChanceBook[(enemyAC-toHit, advantage, battleStats.critRange)]
         critChance = Action.critChanceBook[(battleStats.critRange, advantage)]
+        printIf(doPrint, mod, toHit, enemyAC, hitChance, critChance)
         otherDamageDice = 0
         for (dieCount, dieFace) in battleStats.extraDamageDice.items():
             otherDamageDice += Dice.averageDamageForDie(dieFace, dieCount)
-        print(otherDamageDice)
-        hitDamage = (self.alterDice if self.ignoreWeaponDice else weapon.averageHitDamage) + otherDamageDice
-        critDamage = hitDamage * battleStats.critDice
+        weaponDamage = (self.alterDice if self.ignoreWeaponDice else weapon.averageHitDamage)
+        weaponDamageOneDie = (self.alterDice if self.ignoreWeaponDice else weapon.averageHitDamageOneDie)
+        straightBonus = mod * self.modToDamage + battleStats.flatDamageBonus
+        hitDamage = weaponDamage + otherDamageDice + straightBonus
+        critDamage = weaponDamageOneDie * battleStats.critDice + straightBonus
         
-        straightBonus = (mod if self.modToDamage else 0) + battleStats.flatDamageBonus
-        damagePerAttack = critChance * critDamage + (hitChance - critChance) * hitDamage + straightBonus
+        damagePerAttack = critChance * critDamage + (hitChance - critChance) * hitDamage
+        
+        printIf(doPrint, weaponDamage, weaponDamageOneDie)
+        printIf(doPrint, hitDamage, critDamage, straightBonus, otherDamageDice)
         """
         critChance is the likelihood of having a crit side on the die, times the damage done on a crit.
         (hitChance - critChance) gives us the likelihood where we hit and do normal damage.
@@ -65,8 +73,10 @@ class Action(Requireable):
         """
 
         if(self.name == "Attack"): # Only the basic attack action qualifies for extra attack
+            printIf(doPrint, damagePerAttack, battleStats.attacksPerAction)
             return damagePerAttack * battleStats.attacksPerAction
-        return damagePerAttack
+        printIf(doPrint, damagePerAttack)
+        return round(damagePerAttack, 6)
     
     def getRequirements(self) -> list[Requirement]:
         return self.requirements

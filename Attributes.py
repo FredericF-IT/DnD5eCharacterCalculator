@@ -19,27 +19,25 @@ class Usefullness(Enum):
 
 
 class Attributes:
-    """Str = 0 # This is for use in data files, as we can currently only navigate via getattr, witch returns a 
-    Dex = 0
-    Con = 0
-    Int = 0
-    Wis = 0
-    Cha = 0"""
 
-    
     def makeDict(keys: list, values: list) -> dict[AttributeType, int]:
         dictionary = {}
         for i, key in enumerate(keys):
             dictionary[key] = values[i]
         return dictionary
 
-    def __init__(self, baseStats: list[int]) -> None:
-        self.choices = ""
+    def __init__(self, baseStats: list[int], choices:str="", getX:int=0, inY:int=0, unchoosable=set[AttributeType](), hasStartingChoice:bool=False, boni=None) -> None:
+        self.choices = choices
+        self.ASIAvailable = False
         self.baseStats = Attributes.makeDict(AttributeType, baseStats)
-        self.boni = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
+        if boni == None:
+            self.boni = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
+        else:
+            self.boni = boni
         self.mod = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
-        self.hasStartingChoice = False
-        self.unchoosable = set[AttributeType]()
+        self.hasStartingChoice = hasStartingChoice
+        self.unchoosable = unchoosable
+        self.getX, self.inY = getX, inY
         for statName in AttributeType:
             self.calcModifier(statName)
 
@@ -73,18 +71,25 @@ class Attributes:
         self.hasStartingChoice = True
 
     def getCopy(self) -> 'Attributes':
-        attr = Attributes(list(self.baseStats.values()))
-        attr.addStatBonus(self.boni)
-        attr.choices = self.choices
+        attr = Attributes(list(self.baseStats.values()), self.choices, self.getX, self.inY, self.unchoosable, self.hasStartingChoice, self.boni.copy())
+        #print(attr.choices)
+        #print(self.choices)
+        #print("")
+        assert attr.choices == self.choices
+        assert attr.mod == self.mod
+        assert attr == self
         return attr
 
     def __str__(self) -> str:
-        info = "| Str | Dex | Con | Int | Wis | Cha |\n"
-        scores = "| "
-        mods = "| "
+        info = "     | Str | Dex | Con | Int | Wis | Cha |\n"
+        base = "Base | "
+        scores = "All  | "
+        mods = "Mod  | "
         for statName in AttributeType:
+            base += '{:2d}'.format(self.baseStats[statName]) + "  | "
             scores += '{:2d}'.format(self.getStat(statName)) + "  | "
             mods += '{:2d}'.format(self.mod[statName]) + "  | "
+        info += base + " \n"
         info += scores + "\n"
         info += mods
         return info
@@ -99,4 +104,5 @@ class Attributes:
                 self.hasStartingChoice == __value.hasStartingChoice and \
                 self.baseStats == __value.baseStats and \
                 self.boni == __value.boni and \
-                self.choices == __value.choices
+                self.choices == __value.choices and \
+                self.ASIAvailable == __value.ASIAvailable

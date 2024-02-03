@@ -6,3 +6,5 @@ We use point-buy to get our stats. We can never choose more then 15 in any Score
 Weapons are not changed.
 Some abilities are asumed to be always active, like the Barbarian's rage giving advantage, or the Rogue's sneak attack from having adavantage (starting level 2).
 Many weapon types are reduced to their properties + damage dice, as many weapons differ only in flavour or damage type.
+As a character variant gets assigned a weapon on creation, we will assume that they use that weapon.
+We will not check if feats that grant bonus action attacks (Polearm Master, Great Weapon Master) are performed after an attack, as that is assumed. (These actions are disjointed at the moment of writing anyways)

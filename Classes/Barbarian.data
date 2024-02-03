@@ -2,7 +2,6 @@ Req: method[attr/getStat(Str=attrTpye)] > 13 int
 Stats: Str=Both Con=Both Dex=Good Int=Dump
 Lvl: 1: Rage
 Lvl: 2: RecklessAttack
-Lvl: 3: Subclass
 Lvl: 4: ASI
 Lvl: 5: ExtraAttack>Barbarian
 Lvl: 8: ASI
