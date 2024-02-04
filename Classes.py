@@ -2,6 +2,27 @@ from Requirements import Requireable, Requirement
 from Features import Feature
 from Attributes import Usefullness, AttributeType
 
+
+class SubClass:
+    def __init__(self, name, lines: list[str], features: dict[str, Feature]) -> None:
+        self.name = name
+        self.featuresAtLevel = dict[int, list[Feature]]()
+        for line in lines:
+            words = line.split(" ")
+            assert words[0] == "Lvl:"
+
+            featureNames = words[2].split("|")
+            featureList = []
+            for featureName in featureNames:
+                nameParts = featureName.split(">")
+                feature = features[nameParts[0]].getCopy()
+                if(len(nameParts) > 1):
+                    feature.fillInValues(nameParts[1].split(":"))
+                featureList.append(feature)
+                assert feature.isFinished()
+            self.featuresAtLevel[int(words[1][:-1])-1] = featureList
+
+
 class Class(Requireable):
     def __init__(self, name: str, lines: list[str], features: dict[str, Feature]) -> None:
         self.name = name
@@ -12,11 +33,11 @@ class Class(Requireable):
         self.statUsefullness = dict[AttributeType, Usefullness]()
         for stat in AttributeType:
             self.statUsefullness[stat] = Usefullness.Okay
-        subclasses = []
+        subclasses = dict[str, SubClass]()
         currentSubClass = 0
         i = 0 # keep track what lines we've read
         for line in lines:
-            if(line == "Type"):
+            if(line == "-----------"):
                 break # have now begun subclasses
             i += 1
             words = line.split(" ")
@@ -44,10 +65,31 @@ class Class(Requireable):
             elif(words[0] == "and Req:"):
                 self.requirement2 = Requirement(words[1], words[2], words[3], words[4])
                 self.reqType = lambda x, y, character: x.testRequirement(character) and y.testRequirement(character)
+        # Main class is done # we are at -----------
+        i += 3
+        self.subclasses = dict[str, SubClass]()
+        while i < len(lines):
+            name = ""
+            data = []
+            for line in lines[i:]:
+                i += 1
+                words = line.split(" ")
+                if(words[0] == "Name:"):
+                    name = " ".join(words[1:])
+                elif(line == "-----------"): # next subclass reached
+                    break
+                else:
+                    data.append(line)
+            self.subclasses[name] = SubClass(name, data, features)
+        
+        #print(name, [[str(feature) for feature in features[1]] for features in self.featuresAtLevel.items()])
         self.preCalcUsefulls()
 
-    def getFeaturesAtLevel(self, Level: int):
-        return self.featuresAtLevel.get(Level, [])
+    def getFeaturesAtLevel(self, Level: int, subclassName: str):
+        features = self.featuresAtLevel.get(Level, [])
+        if not (subclassName == None):
+            features.extend(self.subclasses[subclassName].featuresAtLevel.get(Level, []))
+        return features
 
     def canTakeClass(self, character) -> bool:
         if(self.reqType == None):
@@ -76,13 +118,16 @@ class Class(Requireable):
     def __str__(self) -> str:
         return self.name + \
             "\n  If "+" and ".join([str(req) for req in self.getRequirements()]) + "\n  Features:" + "\n" + \
-            "\n".join(["    Level "+str(items[0]+1)+": "+",".join([feature.name for feature in items[1]]) for items in self.featuresAtLevel.items()])
+            "\n".join(["    Level "+str(items[0]+1)+": "+", ".join([feature.name for feature in items[1]]) for items in self.featuresAtLevel.items()])
                                                                               #+"["+", ".join([y+" "+feature.values[i] for i, y in enumerate(feature.effects)])+"]" 
-    
+
+
 from copy import deepcopy
 class ClassList:
     classesInOrderTaken = list[Class]()
-    levelOfClasses = dict[Class, int]()
+    levelOfClasses = dict[str, int]()
+    subclassesTaken = dict[str, str]()
+    subClassChoice = ""
     def __init__(self, startingClass: Class, character) -> None:
         self.levelOfClasses = {}
         self.classesInOrderTaken = []
@@ -90,10 +135,16 @@ class ClassList:
 
     def increaseClass(self, newClassLevel: Class, character):
         self.classesInOrderTaken.append(newClassLevel)
-        level = self.levelOfClasses.get(newClassLevel, 0) 
-        self.levelOfClasses[newClassLevel] = level + 1
-        character.applyFeatures(newClassLevel.getFeaturesAtLevel(level))
+        level = self.levelOfClasses.get(newClassLevel.name, 0) 
+        self.levelOfClasses[newClassLevel.name] = level + 1
+        character.applyFeatures(newClassLevel.getFeaturesAtLevel(level, self.subclassesTaken.get(newClassLevel.name, None)))
 
+    def chooseSubclass(self, mainClass: Class, subclass: SubClass, character):
+        self.subClassChoice = ""
+        self.subclassesTaken[mainClass.name] = subclass.name
+        levelWhenTaken = self.levelOfClasses[mainClass.name]-1
+        character.applyFeatures(subclass.featuresAtLevel.get(levelWhenTaken, []))
+    
     def getClassAtLevel(self, characterLevel: int) -> Class:
         return self.classesInOrderTaken[characterLevel]
     
@@ -101,14 +152,25 @@ class ClassList:
         copyList = deepcopy(self)
         copyList.levelOfClasses = self.levelOfClasses.copy()
         copyList.classesInOrderTaken = self.classesInOrderTaken.copy()
+        copyList.subclassesTaken = self.subclassesTaken.copy()
+        assert copyList == self
         #for classTaken in self.classesInOrderTaken[1:]:
         #    copyList.increaseClass(classTaken, newChar)
         return copyList
     
     def __str__(self) -> str:
-        return ", ".join([str(x[1])+" levels "+x[0].name for x in self.levelOfClasses.items()])
+        return ", ".join([str(x[1])+" levels "+x[0]+(" ("+self.subclassesTaken[x[0]]+")" if not self.subclassesTaken.get(x[0], None) == None else "") for x in self.levelOfClasses.items()])
     
+    def sameMainClass(self, b: Class) -> bool:
+        if not isinstance(b, ClassList):
+            return NotImplemented
+        return  self.classesInOrderTaken == b.classesInOrderTaken and \
+                self.levelOfClasses == b.levelOfClasses
+
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, ClassList):
             return NotImplemented
-        return self.classesInOrderTaken == __value.classesInOrderTaken and self.levelOfClasses == __value.levelOfClasses
+        return  self.classesInOrderTaken == __value.classesInOrderTaken and \
+                self.levelOfClasses == __value.levelOfClasses #and \
+            #    self.subclassesTaken == self.subclassesTaken and \
+             #   self.subClassChoice == self.subClassChoice

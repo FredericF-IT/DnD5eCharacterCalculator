@@ -1,4 +1,3 @@
 Bonus Action
 Req: var[battleStats/weapon/wType] = Light str
-After Attack
 ModToDamage: False

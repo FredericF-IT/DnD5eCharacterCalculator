@@ -1,5 +1,7 @@
 from math import floor
 from itertools import permutations
+from multiprocessing import cpu_count
+from concurrent.futures import ProcessPoolExecutor
 
 from Feats import Feat
 from Weapons import Weapon
@@ -8,6 +10,10 @@ from CharSheet import Character
 from Classes import Class
 from Attributes import Attributes, AttributeType, Usefullness
 from Actions import Action
+
+#For Processor pickling
+#def upgradeCharacterLevel(self: 'CombinationExplorer', characters: list[Character], aClass: Class) -> list[Character]:
+#    return CombinationExplorer.upgradeCharacterLevel(self, characters, aClass)
 
 skillCost = lambda score: score-8 + max(score - 13, 0) # The cost is 0 at 8, and increases by 1 until a score of 13. At 14 and 15 the increase goes to 2. You cannot chose a score higher then 15 in pointbuy.
 
@@ -194,7 +200,8 @@ class CombinationExplorer:
                 possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(bothStats), getPlusX, yTimes))
             elif((stat, Usefullness.Main) in usefullness):
                 otherStat = reversedUsefullness[Usefullness.Good] # Assumes the class has at least one main and one good / usefull Ability Score
-                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(stat, otherStat), getPlusX, yTimes))
+                otherStat.append(stat)
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(otherStat), getPlusX, yTimes))
 
         newCharacters = []
         seenDict = []
@@ -234,6 +241,7 @@ class CombinationExplorer:
             newCharacter = character.getCopy()
             newCharacter.attr.addStatBonusList(improvement)
             newCharacters.append(newCharacter)
+        assert len(newCharacters) > 0
         return newCharacters
 
     def createCharactersLvl1(self, actions: list[Action], onlyGoodStats) -> list[Character]:
@@ -282,31 +290,52 @@ class CombinationExplorer:
                 assert character.attr.getStat(stat) < 18 # looking good
         return characters
     
-    def upgradeCharacterLevel(self, characters: list[Character]) -> list[Character]:
-        newCharacters = []
-        for aClass in self.classes:
-            for character in characters:
-                if not (aClass.canTakeClass(character)):
-                    continue
-                newCharacter = character.getCopy()
-                newCharacter.increaseClass(aClass)
-                if not (newCharacter.attr.ASIAvailable):
-                    newCharacters.append(newCharacter)
-                    continue
+class Test:
+    def upgradeCharacterLevel(classes: list[Class], feats: list[Feat], characters: list[Character]) -> list[Character]:
+        processes = []
+        executor = ProcessPoolExecutor(max_workers=cpu_count())
 
-                newCharacter.attr.ASIAvailable = False
-                
-                for feat in self.feats:
-                    if(feat.isAvailable(character)):
-                        featCharacter = newCharacter.getCopy()
-                        feat.applyToCharacter(featCharacter)
-                        newCharacters.append(featCharacter)
-                
-                baseClass = newCharacter.classes.getClassAtLevel(0)
-                usefullness, usefullStats, reversedUsefullness = baseClass.getUsefulls()
-                oldLength = len(newCharacters)
-                dumpStats = reversedUsefullness.get(Usefullness.Dump, [])
-                newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
-                newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
-                assert oldLength < len(newCharacters)
+        oldLength = len(characters)
+        for aClass in classes:
+            print(aClass.name)
+            processes.append(executor.submit(Test.upgradePerClass, feats, characters, aClass))
+        newCharacters = []
+        for process in processes:
+            newCharacters.extend(process.result())
+        executor.shutdown()
+        assert oldLength <= len(newCharacters)
+        return newCharacters
+    
+    def upgradePerClass(feats: list[Feat], characters: list[Character], aClass: Class):
+        newCharacters =  list[Character]()
+        for character in characters:
+            if not (aClass.canTakeClass(character)):
+                continue
+            newCharacter = character.getCopy()
+            newCharacter.increaseClass(aClass)
+
+            choseSubClass = False
+            if not (newCharacter.classes.subClassChoice == ""):
+                choseSubClass = True
+                for subClass in aClass.subclasses.values():
+                    subClassCharacter = newCharacter.getCopy()
+                    subClassCharacter.classes.chooseSubclass(aClass, subClass, subClassCharacter)
+                    newCharacters.append(subClassCharacter)
+            if not (newCharacter.attr.ASIAvailable):
+                if not choseSubClass:
+                    newCharacters.append(newCharacter)
+                continue
+
+            newCharacter.attr.ASIAvailable = False
+            
+            for feat in feats:
+                if(feat.isAvailable(character) and not feat.name in character.gottenFeatures):
+                    featCharacter = newCharacter.getCopy()
+                    feat.applyToCharacter(featCharacter)
+                    newCharacters.append(featCharacter)
+            
+            baseClass = newCharacter.classes.getClassAtLevel(0)
+            usefullness, usefullStats, reversedUsefullness = baseClass.getUsefulls()
+            dumpStats = reversedUsefullness.get(Usefullness.Dump, [])
+            newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
         return newCharacters

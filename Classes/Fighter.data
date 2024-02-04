@@ -1,7 +1,6 @@
 Req: method[attr/getStat(Str=attrTpye)] > 13 int
 or Req: method[attr/getStat(Dex=attrTpye)] > 13 int
 Stats: Str=Either Dex=Either Con=Good
-Lvl: 3: Subclass
 Lvl: 4: ASI
 Lvl: 5: ExtraAttack>Fighter
 Lvl: 6: ASI

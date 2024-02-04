@@ -1,2 +1,1 @@
-var[battleStats/getsAdvantageAll True bool]
 var[battleStats/getsAdvantageFirst True bool]

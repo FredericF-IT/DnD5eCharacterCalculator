@@ -1,4 +1,4 @@
 Bonus Action
 Req: var[battleStats/weapon/wType] = Polearm str
-Damage: 1d4
+Damage: dice=1d4
 ModToDamage: True

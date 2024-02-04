@@ -1,5 +1,4 @@
 from math import ceil
-from inspect import getmembers, isroutine
 from Weapons import Weapon
 
 class BattleStats:
@@ -12,8 +11,10 @@ class BattleStats:
     profBonus = 2
     flatDamageBonus = 0
     flatToHitBonus = 0
-    extraDamageDice = dict[int, int]()
-    getsAdvantage = False
+    extraDamageDice = dict[int, int]()      # Damage dice you get to add to every attack you make (like Improved Smite or Elemental Cleaver)
+    #extraDamageDicePT = dict[int, int]()    # Damage dice you get to add to the first attack you make every round (like Sneak Attack)
+    getsAdvantageAll = False                # Your class has a reliable way to get advantage for every attack
+    getsAdvantageFirst = False              # Your class has a reliable way to get advantage for your first attack
 
     def __init__(self, weapon: Weapon) -> None:
         self.weapon = weapon
@@ -51,7 +52,9 @@ class BattleStats:
         newBattleStats.flatToHitBonus = self.flatToHitBonus
         newBattleStats.weapon = self.weapon
         newBattleStats.extraDamageDice = self.extraDamageDice.copy()
-        newBattleStats.getsAdvantage = self.getsAdvantage
+        #newBattleStats.extraDamageDicePT = self.extraDamageDicePT.copy()
+        newBattleStats.getsAdvantageAll = self.getsAdvantageAll
+        newBattleStats.getsAdvantageFirst = self.getsAdvantageFirst
         return newBattleStats
 
     def __str__(self) -> str:
@@ -59,14 +62,17 @@ class BattleStats:
                 "Crit range: " + str(self.critRange) + " Crit dice: " + str(self.critDice) + "\n"+\
                 "Damage bonus: " + str(self.flatDamageBonus) + " toHit bonus " + str(self.flatToHitBonus) + "\n"+\
                 "Proficiency Bonus: " + str(self.profBonus) + "\n"+\
-                "Other dice: " + ", ".join([str(x[0])+"d"+str(x[1]) for x in self.extraDamageDice.items()])
+                "Other dice: " + ", ".join([str(x[1])+"d"+str(x[0]) for x in self.extraDamageDice.items()])
     
     # Dice can also easily removed by using a negative number oof dice.
     # This is usefull for upgrading features, as you may have an increase from 2d6 to 2d8 etc.
     def addExtraDamageDie(self, dice: list[(int, int)]):
         for numOfDice, diceFace in dice:
             self.extraDamageDice[diceFace] = self.extraDamageDice.get(diceFace, 0) + numOfDice
-            self.extraDamageDice = 0
+
+    #def addExtraDamageDiePT(self, dice: list[(int, int)]):
+    #    for numOfDice, diceFace in dice:
+    #        self.extraDamageDicePT[diceFace] = self.extraDamageDicePT.get(diceFace, 0) + numOfDice
     
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, BattleStats):
@@ -81,4 +87,4 @@ class BattleStats:
                 self.flatToHitBonus == __value.flatToHitBonus and \
                 self.weapon == __value.weapon and \
                 self.extraDamageDice == __value.extraDamageDice and \
-                self.getsAdvantage == __value.getsAdvantage
+                self.getsAdvantageAll == __value.getsAdvantageAll

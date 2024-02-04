@@ -1,0 +1,9 @@
+Req: method[attr/getStat(Dex=attrTpye)] > 13 int
+Stats: Dex=Main Con=Good Str=Dump
+Lvl: 1: SneakAttack
+Lvl: 2: HideForAdvantage
+Lvl: 4: ASI
+Lvl: 8: ASI
+Lvl: 12: ASI
+Lvl: 16: ASI
+Lvl: 19: ASI

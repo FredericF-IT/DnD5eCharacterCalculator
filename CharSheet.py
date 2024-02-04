@@ -1,8 +1,5 @@
-from re import search
-from copy import deepcopy
-
 from Weapons import Weapon
-from Attributes import Attributes, AttributeType
+from Attributes import Attributes
 from Features import Feature, Value
 from Races import Race
 from BattleStats import BattleStats
@@ -54,7 +51,7 @@ class Character:
                 str(self.classes)  + "\n" +\
                 str(self.attr)  + "\n" +\
                 "Feats: "+", ".join([feat for feat in self.gottenFeatures])  + "\n" +\
-                ("Has advantage on Attacks.\n" if self.battleStats.getsAdvantage else "") +\
+                ("Has advantage on Attacks.\n" if self.battleStats.getsAdvantageAll else "") +\
                 str(self.battleStats)  + "\n" +\
                 str(self.battleStats.weapon)
                 
@@ -105,7 +102,7 @@ class Character:
         getattr(current, dictName)[arguments] = newValue
 
     def getCopy(self) -> 'Character':
-        return Character.makeCharacter(self.attr.getCopy(), self.battleStats.getCopy(), self.race, self.actions, self.classes.getCopy(), self.gottenFeatures.copy(), self.damageHistory.copy())
+        return Character.makeCharacter(self.attr.getCopy(), self.battleStats.getCopy(), self.race, self.actions.copy(), self.classes.getCopy(), self.gottenFeatures.copy(), self.damageHistory.copy())
         """copyChar = Character(Attributes([0, 0, 0, 0, 0, 0]), self.race, self.battleStats.weapon, self.actions.copy(), self.classes.classesInOrderTaken[0], True, self.classes.getCopy())
         copyChar.attr = self.attr.getCopy()
         print(self.battleStats)

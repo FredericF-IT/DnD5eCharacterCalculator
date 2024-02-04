@@ -4,7 +4,7 @@ from Features import Feature
 class Requirement:
     def __init__(self, varPath: str, operator: str, value: str, typeName: str) -> None:
         self.getInfoFromMethod = "(" in varPath
-        (variable, methodCall, unused) = Feature.parseFeature([(varPath if self.getInfoFromMethod else varPath.replace("]", " ? ?]"))]) # use existing function to find out if requirement depends on value of a method
+        (variable, methodCall, unused, unused) = Feature.parseFeature([(varPath if self.getInfoFromMethod else varPath.replace("]", " ? ?]"))], None) # use existing function to find out if requirement depends on value of a method
         if(self.getInfoFromMethod):
             self.info = methodCall[0]
         else:

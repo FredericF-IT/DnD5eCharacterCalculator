@@ -2,12 +2,19 @@ Req: method[attr/getStat(Str=attrTpye)] > 13 int
 Stats: Str=Both Con=Both Dex=Good Int=Dump
 Lvl: 1: Rage
 Lvl: 2: RecklessAttack
+Lvl: 3: Subclass>Barbarian
 Lvl: 4: ASI
 Lvl: 5: ExtraAttack>Barbarian
 Lvl: 8: ASI
-Lvl: 9: ExtraCritDice>1
+Lvl: 9: ExtraCritDice>1|RageImprovement
 Lvl: 12: ASI
 Lvl: 13: ExtraCritDice>1
-Lvl: 16: ASI
+Lvl: 16: ASI|RageImprovement
 Lvl: 17: ExtraCritDice>1
 Lvl: 19: ASI
+-----------
+Subclasses
+-----------
+Name: Path of Giants
+Lvl: 6: ElementalCleaver
+Lvl: 14: DemiurgicColossus

@@ -1,66 +1,70 @@
-from Mitosis import CombinationExplorer
+from Mitosis import CombinationExplorer, Test
 from CharSheet import Character
 from Actions import Action, ActionType
 from CharIO import getFeatures, getRaces, getWeapons, getActions, getFeats, getClasses
-#from Classes import Class
 from enum import Enum
 
 # ------ Enable to not assign stats in scores that dont increase damage, heavily reducing the amount of starting permutations ------ #
 onlyGoodStats = True
-maxCharacters = 300 # The highest number of characters for each class. Using this removes everything but the top x characters
-
+maxCharacters = 600 # The highest number of characters for each class. Using this removes everything but the top x characters
+levelToReach = 6   # Goes until characters have reached this level.
 # ------      ------      ------      ------      ------        ------        ------      ------      ------      ------      ------ #
 
-features = getFeatures()
+actions = getActions()
+features = getFeatures(actions)
 races = getRaces(features)
 weapons = getWeapons()
-actions = getActions()
 feats = getFeats(actions, features)
 classes = getClasses(features)
+classes.pop("Barbarian")
+classes.pop("Fighter")
+#races.pop("Half-Orc")
 
 expectedAC = [13, 13, 13, 14, 15, 15, 15, 16, 16, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19]
 
-level1 = list[(int, (Character, Action, Action))]() # First value is damage, the actions are the best action / bonus action available that resulted in that rounds damage.
-level2 = list[(int, (Character, Action, Action))]()
-level3 = list[(int, (Character, Action, Action))]()
-level4 = list[(int, (Character, Action, Action))]()
-level5 = list[(int, (Character, Action, Action))]()
-level6 = list[(int, (Character, Action, Action))]()
-levelLists = [level1, level2, level3, level4, level5, level6]
+levelLists = [list[(int, (Character, Action, Action))]() for i in range(0, 20)] # First value is damage, the actions are the best action / bonus action available that resulted in that rounds damage.
 
 def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
-    acAtLevel = expectedAC[len(characters[0].classes.classesInOrderTaken)-1]
+    level = len(characters[0].classes.classesInOrderTaken)-1
+    acAtLevel = expectedAC[level]
     for character in characters:
         bestActMain = None
         bestActMainValue = 0
         bestActBonus = None
         bestActBonusValue = 0
+        perRoundDamage = 0
         for action in character.actions:
-            damage = action.executeAttack(character.attr, character.battleStats, acAtLevel, character.battleStats.getsAdvantage)
+            if not (action.isAvailable(character)): # Rogues get Sneak Attack at first level, but only get advantage reliably at second level.
+                continue 
+            damage = action.executeAttack(character.attr, character.battleStats, acAtLevel, character.battleStats.getsAdvantageAll, character.classes.levelOfClasses)
             if(action.resource == ActionType.action):
                 if(damage <= bestActMainValue):
                     continue
                 bestActMainValue = damage
                 bestActMain = action
-            else:
+            elif(action.resource == ActionType.bonusAction):
                 if(damage <= bestActBonusValue):
                     continue
                 bestActBonusValue = damage
                 bestActBonus = action
-        perRoundDamage = bestActMainValue + bestActBonusValue
+            elif(action.resource == ActionType.onePerTurn):
+                perRoundDamage += damage
+        perRoundDamage += bestActMainValue + bestActBonusValue
         character.damageHistory.append(perRoundDamage)
         targetList.append((perRoundDamage, (character.classes.classesInOrderTaken[0], character, bestActMain, bestActBonus)))
     targetList.sort(key=lambda entry: entry[0], reverse=True)
-    #print([e[0] for e in targetList])
 
     if (maxCharacters == None):
         return
-    characters.clear()
+    print(len(characters))
+    characters = []
     keepEntries = []
     for aClass in classes.values():
+#        assert not aClass.name == "Barbarian"
         charactersLeft = maxCharacters
         for entry in targetList:
-            if not (entry[1][0] == aClass):
+#            assert not entry[1][0].name == "Barbarian"
+            if not (entry[1][0].name == aClass.name):
                 continue
             charactersLeft -= 1
             characters.append(entry[1][1])
@@ -70,48 +74,32 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
     targetList.clear() # Only keep best entries, but have to resort because we went by class
     targetList.extend(keepEntries)
     targetList.sort(key=lambda entry: entry[0], reverse=True)
-
-#def sortCharactersToClass(self, characters: list[Character]) -> dict[Class, Character]:
-#    theDict = {}
-#    for aClass in self.classes:
-#        theDict[aClass] = []
-#    for character in characters:
-
-
-def printLevelResults(listIndex: int):  
-    print("Top 10 at Level "+str(listIndex+1)+":")   
-    for entry in levelLists[listIndex][:10]:
-        character = entry[1]
-        extraAttack = character[2].name == "Attack"
-        print(entry[0], "damage using", character[2].name, ("x"+str(character[1].battleStats.attacksPerAction) if extraAttack else ""), ("and "+character[3].name if not character[3] == None else ""))
-        #print("actually", character[2].executeAttack(character[1].attr, character[1].battleStats, expectedAC[listIndex], character[1].battleStats.getsAdvantage, True))
-        character[1].printCharacter()
-        print("")
-    print("We now have", len(characters), "characters.")
-#    input("...")
+    return characters
 
 class characterSelection(Enum):
     BestAtEnd = 0 # Compare the builds that have the highest damage at the final level
     BestAtLevel = 1 # Compare the builds by getting the best one at each level
 
 import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-
-import multiprocessing #threading
 import tkinter as tk
 
 def showDifferentResults(listIndex: int, mode: characterSelection):
     listEnd = levelLists[listIndex]
     top5Different = [(listEnd[0][0], listEnd[0][1][1])]
     i = 1
-    while(len(top5Different) < 5):
+    while(len(top5Different) < 5 and i < len(listEnd)):
         entry = listEnd[i]
         i += 1
         damage = entry[0]
         if not (damage == top5Different[-1][0]):
             top5Different.append((damage, entry[1][1]))
             print(top5Different[-1], top5Different[-1][0])
+    for x in range(1, 5 - len(top5Different)):
+        entry = listEnd[x]
+        damage = entry[0]
+        top5Different.append((damage, entry[1][1]))
+
 
     buildText = []
     buildDamage = []
@@ -126,6 +114,7 @@ def showDifferentResults(listIndex: int, mode: characterSelection):
     currentIndex = [0]
     def swapBuild(currentIndex: list[int], forward: bool, buildTextLabel: tk.Label, buildText: list[str], maxLength: int, buildDamage: list[list[int]], canvas, toolbar, figure):
         indexChange = 1 if forward else -1
+        maxLength = len(buildText)
         currentIndex[0] = ((currentIndex[0] + indexChange) + maxLength) % maxLength
         buildTextLabel.configure(text=buildText[currentIndex[0]])
         buildTextLabel.grid(row=0,column=0,columnspan=2)#.pack()
@@ -181,19 +170,31 @@ def showDifferentResults(listIndex: int, mode: characterSelection):
     #displayGraph.join()
     #displayBuilds.join()
 
+def printLevelResults(listIndex: int):  
+    print("Top 10 at Level "+str(listIndex+1)+":")   
+    for entry in levelLists[listIndex][:10]:
+        character = entry[1]
+        extraAttack = character[2].name == "Attack"
+        print(entry[0], "damage using", character[2].name, ("x"+str(character[1].battleStats.attacksPerAction) if extraAttack else ""), ("and "+character[3].name if not character[3] == None else ""))
+        #print("actually", character[2].executeAttack(character[1].attr, character[1].battleStats, expectedAC[listIndex], character[1].battleStats.getsAdvantage, True))
+        character[1].printCharacter()
+        print("")
+    print("We now have", len(characters), "characters.")
+#    input("...")
 
 if __name__ == "__main__":
     combi = CombinationExplorer(feats.values(), weapons.values(), races.values(), classes.values())
     characters = combi.createCharactersLvl1(actions, onlyGoodStats)
     print("Calculating damage...")
     print("Level 1...")
-    rankBuilds(characters, level1)
+    print("We created", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not maxCharacters == None else ""))
+    characters = rankBuilds(characters, levelLists[0])
     #printLevelResults(0)
-    
-    for i in range(1, 6):
+    for i in range(1, levelToReach):
         print("Level "+str(i+1)+"...")
-        characters = combi.upgradeCharacterLevel(characters)
-        rankBuilds(characters, levelLists[i])
+        characters = Test.upgradeCharacterLevel(list(classes.values()), list(feats.values()), characters)
+        print("We created", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not maxCharacters == None else ""))
+        characters = rankBuilds(characters, levelLists[i])
         #printLevelResults(i)
 
-    showDifferentResults(5, characterSelection.BestAtEnd)
+    showDifferentResults(levelToReach-1, characterSelection.BestAtEnd)
