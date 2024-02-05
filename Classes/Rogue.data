@@ -1,4 +1,4 @@
-Req: method[attr/getStat(Dex=attrTpye)] > 13 int
+Req: method[attr/getStat(Dex=attrTpye)] > 12 int
 Stats: Dex=Main Con=Good Str=Dump
 Lvl: 1: SneakAttack
 Lvl: 2: HideForAdvantage

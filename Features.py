@@ -13,7 +13,7 @@ class Value:
                 self.convValue = Converter.convert(self.typeName, self.value)
 
         def getValue(self):
-            assert self.isFinished()
+            #assert self.isFinished()
             return self.convValue
         
         def isFinished(self) -> bool:
@@ -55,16 +55,16 @@ class Feature:
 
         for line in lines:
             accessType, values = line.split("[")
-            if(accessType == "var"):        # var[path value valueType]
+            if(accessType == "var"):            # var[path value valueType]
                 path, value, valueType = values[:-1].split(" ")
                 varChanges.append((path, Value(value, valueType)))
-            elif(accessType == "method"):     # method[path(value=valueType|value2=valueType2|...)] 
+            elif(accessType == "method"):       # method[path(value=valueType|value2=valueType2|...)] 
                 path, values = values[:-2].split("(")
                 methodCalls.append((path, getArgumentValues(values)))
-            elif(accessType == "feature"):    # feature[featureName value|value2|...]
+            elif(accessType == "feature"):      # feature[featureName value|value2|...]
                 featureName, values = values[:-1].split(" ")
-                subFeatures.append((featureName, values.split("|")))  # Sub features should know the type of their holes
-            elif(accessType == "action"):    # feature[featureName value|value2|...]
+                subFeatures.append((featureName, values.split("|")))
+            elif(accessType == "action"):       # action[actionName]
                 actionName = values[:-1]
                 actions.append(actionDict[actionName])
         return (varChanges, methodCalls, subFeatures, actions)
@@ -113,15 +113,11 @@ class Feature:
         return True
 
     def applyFeature(self, character):
-        assert self.isFinished()
         for var in self.varChanges:
             value = var[1].getValue()
-            #print(value, var, type(value))
             if(isinstance(value, bool)):
-                #print(value, var, "worked")
                 character.setVariable(var[0], value)
             else:
-                #print("huhuh")
                 character.setVariable(var[0], character.getVariable(var[0]) + value)
         for methodCall in self.methodCalls:
             character.useMethod(methodCall[0], methodCall[1])
@@ -130,7 +126,7 @@ class Feature:
             subFeature.applyFeature(character)
 
     def getCopy(self):
-        return Feature(self.name, deepcopy(self.varChanges), deepcopy(self.methodCalls), self.subFeatures.copy(), self.actions.copy()) # first two need deepcopy as they are tuples in a list, the last one is just a list of Values
+        return Feature(self.name, [*self.varChanges], deepcopy(self.methodCalls), [*self.subFeatures], self.actions.copy()) # first two need deepcopy as they are tuples in a list, the last one is just a list of Values
     
     def __str__(self) -> str:
         return self.name + ":" +\

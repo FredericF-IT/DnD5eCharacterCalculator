@@ -7,8 +7,6 @@
 
 
 ## Subsection
-Please use:  
-pip install scipy  
 Possibly needed dependent on OS:  
 sudo apt-get install python3-tk  
 sudo apt-get install python3-pillow  
@@ -17,3 +15,7 @@ It may happen that the program gives you the error "_tkinter.TclError: couldn't 
 You can fix this by using this  
 export DISPLAY=:0  
 with the number that responds to the appropriate monitor.  
+
+To use:  
+Start Analysis.py in the commandline  
+All settings are explained inside the file, but most settings in Analysis.py are overwritten with those from Settings.txt

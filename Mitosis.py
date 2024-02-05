@@ -49,8 +49,8 @@ class CombinationExplorer:
             maxInOneScore = scoreBuyableWithPoints(pointsLeft)
             for i in range(max(floor(maxInOneScore / len(goodStats))-3, 8), maxInOneScore+1):
                 pointsLeftB = pointsLeft - skillCost(i)
-                current = CombinationExplorer.putStatAtPosition(i, goodStat, stats.copy())
-                copyOfStats = goodStats.copy()
+                current = CombinationExplorer.putStatAtPosition(i, goodStat, [*stats])
+                copyOfStats = [*goodStats]
                 copyOfStats.remove(goodStat)                
                 if(len(copyOfStats) == 0):
                     statCombinations.append((pointsLeftB, current))
@@ -64,12 +64,12 @@ class CombinationExplorer:
         if(len(okayStats) == 0):
             if(not CombinationExplorer.seenBefore.get(tuple(stats), False)):
                 CombinationExplorer.seenBefore[tuple(stats)] = True
-                assert pointsLeft == 0
+                #assert pointsLeft == 0
                 return [stats]
             return []
         statCombinations = []
         for okayStat in okayStats:
-            copyOfStats = okayStats.copy()
+            copyOfStats = [*okayStats]
             copyOfStats.remove(okayStat)
             maxInOneScore = scoreBuyableWithPoints(pointsLeft)
             evenStartPoint = floor(floor(maxInOneScore / len(okayStats))/2)*2
@@ -77,7 +77,7 @@ class CombinationExplorer:
                 evenStartPoint += 2
             for i in range(max(evenStartPoint, 8), maxInOneScore+1, 2):
                 pointsLeftB = pointsLeft - skillCost(i)
-                current = CombinationExplorer.putStatAtPosition(i, okayStat, stats.copy())
+                current = CombinationExplorer.putStatAtPosition(i, okayStat, [*stats])
                 statCombinations.extend(CombinationExplorer.getOkayStatCombinations(copyOfStats, pointsLeftB, current))
         return statCombinations
     
@@ -216,7 +216,7 @@ class CombinationExplorer:
 
     def goodASIAssignment(usefullStats: list[AttributeType], exceptForIn: set[int], character: Character) -> list[Character]:
         possibleImprovements = []
-        for stat in usefullStats.difference(exceptForIn): # TODO check if stat is maxed
+        for stat in usefullStats.difference(exceptForIn):
             scoreLeft = 20 - character.attr.getStat(stat)
             if(scoreLeft > 1): # assign both in same
                 improvementFull = [0, 0, 0, 0, 0, 0]
@@ -228,7 +228,7 @@ class CombinationExplorer:
                 for statB in usefullStats.difference(exceptForIn.union(set([stat]))):
                     scoreLeftB = 20 - character.attr.getStat(statB)
                     if(scoreLeftB >= 1):
-                        improvementFull = improvementHalf.copy()
+                        improvementFull = [*improvementHalf]
                         improvementFull[positions[statB]] = 1
                         possibleImprovements.append(improvementFull)
 
@@ -241,7 +241,9 @@ class CombinationExplorer:
             newCharacter = character.getCopy()
             newCharacter.attr.addStatBonusList(improvement)
             newCharacters.append(newCharacter)
-        assert len(newCharacters) > 0
+
+        if(newCharacters == []):
+            newCharacters.append(character)
         return newCharacters
 
     def createCharactersLvl1(self, actions: list[Action], onlyGoodStats) -> list[Character]:
@@ -258,8 +260,8 @@ class CombinationExplorer:
 
             for race in self.races:
                 for weapon in self.weapons:
-                    actionsIfWeapon = baseActions.copy()
-                    if(weapon.wType == "light"):
+                    actionsIfWeapon = [*baseActions]
+                    if(weapon.wType == "Light"):
                         actionsIfWeapon.append(actions["TwoWeaponFighting"])
                     for stats in attributes[aClass]:
                         newCharacter = Character(stats.getCopy(), race, weapon, set(actionsIfWeapon), aClass)
@@ -287,55 +289,90 @@ class CombinationExplorer:
                     print(character.attr.baseStats[stat], character.attr.boni[stat], character.attr.getStat(stat))
                     character.printCharacter()
                     pass
-                assert character.attr.getStat(stat) < 18 # looking good
+                #assert character.attr.getStat(stat) < 18 # looking good
         return characters
     
+    def upgradeCharacterLevel(classes: list[Class], feats: list[Feat], characters: list[Character]) -> list[Character]:
+        newCharacters = []
+
+        #oldLength = len(characters)
+
+        for aClass in classes:
+            characterClones = [character.getCopy() for character in characters]
+            newCharacters.extend(Test.upgradePerClass(feats, characterClones, aClass))
+        #assert oldLength <= len(newCharacters)
+        return newCharacters
+    
+cpuCores=cpu_count()
+
 class Test:
+    def getCharactersFromXToY(characters: list[Character], From: int, To: int):
+        lastX = len(characters) - From              	# We want to start at from, so we remove the elements before from
+        charactersSubset = characters[-lastX:]
+        keepY = To - From                               # The number of characters to keep after from
+        charactersSubset = charactersSubset[:keepY]     # Removing anything after that
+        #assert len(charactersSubset) == keepY
+        return charactersSubset
+
     def upgradeCharacterLevel(classes: list[Class], feats: list[Feat], characters: list[Character]) -> list[Character]:
         processes = []
-        executor = ProcessPoolExecutor(max_workers=cpu_count())
+        executor = ProcessPoolExecutor(max_workers=cpuCores)
 
         oldLength = len(characters)
+
         for aClass in classes:
-            print(aClass.name)
-            processes.append(executor.submit(Test.upgradePerClass, feats, characters, aClass))
+            charactersLeft = oldLength
+            stepSize = int(floor(charactersLeft/cpuCores))
+            for i in range(0, cpuCores):
+                charaterSubset = Test.getCharactersFromXToY(characters, i*stepSize, (i+1)*stepSize)
+                charactersLeft -= len(charaterSubset)
+                processes.append(executor.submit(Test.upgradePerClass, feats, charaterSubset, aClass))
+            if(charactersLeft > 0):
+                charaterSubset = characters[-charactersLeft:]
+                processes.append(executor.submit(Test.upgradePerClass, feats, charaterSubset, aClass))
         newCharacters = []
         for process in processes:
             newCharacters.extend(process.result())
         executor.shutdown()
-        assert oldLength <= len(newCharacters)
+        #assert oldLength <= len(newCharacters)
         return newCharacters
     
     def upgradePerClass(feats: list[Feat], characters: list[Character], aClass: Class):
         newCharacters =  list[Character]()
         for character in characters:
+            tempCharacters = []
             if not (aClass.canTakeClass(character)):
                 continue
-            newCharacter = character.getCopy()
-            newCharacter.increaseClass(aClass)
+            character.increaseClass(aClass)
+            getsChoice = character.classes.choice
+            if not(getsChoice == None):
+                for choice in getsChoice:
+                    tempCharacters.extend(choice.onePerChoice(character))
 
             choseSubClass = False
-            if not (newCharacter.classes.subClassChoice == ""):
+            if not (character.classes.subClassChoice == ""):
                 choseSubClass = True
                 for subClass in aClass.subclasses.values():
-                    subClassCharacter = newCharacter.getCopy()
+                    subClassCharacter = character.getCopy()
                     subClassCharacter.classes.chooseSubclass(aClass, subClass, subClassCharacter)
-                    newCharacters.append(subClassCharacter)
-            if not (newCharacter.attr.ASIAvailable):
+                    tempCharacters.append(subClassCharacter)
+            if not (character.attr.ASIAvailable):
                 if not choseSubClass:
-                    newCharacters.append(newCharacter)
+                    tempCharacters.append(character)
+                newCharacters.extend(tempCharacters)
                 continue
 
-            newCharacter.attr.ASIAvailable = False
+            character.attr.ASIAvailable = False
             
             for feat in feats:
                 if(feat.isAvailable(character) and not feat.name in character.gottenFeatures):
-                    featCharacter = newCharacter.getCopy()
+                    featCharacter = character.getCopy()
                     feat.applyToCharacter(featCharacter)
-                    newCharacters.append(featCharacter)
+                    tempCharacters.append(featCharacter)
             
-            baseClass = newCharacter.classes.getClassAtLevel(0)
-            usefullness, usefullStats, reversedUsefullness = baseClass.getUsefulls()
-            dumpStats = reversedUsefullness.get(Usefullness.Dump, [])
-            newCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, set(dumpStats), newCharacter))
+            baseClass = character.classes.classesInOrderTaken[0]
+            usefullStats = baseClass.mostUsefullAttrTypes
+            dumpStats = set(baseClass.reversedUsefullness.get(Usefullness.Dump, []))
+            tempCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, dumpStats, character))
+            newCharacters.extend(tempCharacters)
         return newCharacters

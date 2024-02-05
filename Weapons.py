@@ -1,4 +1,3 @@
-from scipy import stats
 from Attributes import AttributeType
 
 class Dice:
@@ -10,20 +9,32 @@ class Dice:
         return weaponDice
     
     def averageDamageForDie(dieFace, dieCount):
-        return ((dieFace/2)+0.5)*dieCount
+        return ((dieFace / 2) + 0.5) * dieCount
+    
+    def averageDamageForDieWithRerolls(dieFace, dieCount):
+        normalDamage = (dieFace / 2) + 0.5
+        rerollExtra = (dieFace - 2) / dieFace
+        return (normalDamage + rerollExtra)*dieCount
     
     def averageValueForDice(dice: list[(int, int)]):
         averageDamage = 0
         for (dieCount, dieFace) in dice:
             averageDamage += Dice.averageDamageForDie(dieFace, dieCount)
         return averageDamage
+    
+    def averageValueForDiceWithRerolls(dice: list[(int, int)]):
+        averageDamage = 0
+        for (dieCount, dieFace) in dice:
+            averageDamage += Dice.averageDamageForDieWithRerolls(dieFace, dieCount)
+        return averageDamage
 
 class Weapon:
     def __init__(self, wType: str, damageDice: [(int, int)], usedMod: AttributeType) -> None:
         self.wType = wType
         self.damageDice = damageDice
-        self.averageHitDamage = Dice.averageValueForDice(damageDice)
-        self.averageHitDamageOneDie = Dice.averageValueForDice([(1, x[1]) for x in damageDice]) # Crit bonuses only apply to one damage die, meaning a crit with +1 crit dice on a 2d6 sword does 5d6, not 6d6.
+        self.averageHitDamage = (Dice.averageValueForDice(damageDice), Dice.averageValueForDiceWithRerolls(damageDice))
+        diceOnlyOne = [(1, x[1]) for x in damageDice]
+        self.averageHitDamageOneDie = (Dice.averageValueForDice(diceOnlyOne), Dice.averageValueForDiceWithRerolls(diceOnlyOne)) # Crit bonuses only apply to one damage die, meaning a crit with +1 crit dice on a 2d6 sword does 5d6, not 6d6.
         self.usedMod = usedMod
     
     def caclulateHitChances() -> dict[(int, bool, int), float]:
@@ -49,7 +60,7 @@ class Weapon:
         for critRangeStarts in range(18, 21):
             chance = 1-(critRangeStarts-1)/20
             critChanceBook[(critRangeStarts, False)] = round(chance, 6)
-            critChanceBook[(critRangeStarts, True)] = round(stats.binom.pmf(1, 2, chance) + stats.binom.pmf(2, 2, chance), 6) # chance of getting 1 crit with two dice + chance of getting 2 crits with two dice
+            critChanceBook[(critRangeStarts, True)] = round(chance * (2 - chance), 6)
         return critChanceBook
     
     def __str__(self) -> str:

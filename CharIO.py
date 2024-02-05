@@ -1,15 +1,15 @@
 import os
 from Features import Feature
-from CharSheet import Character
-#from Features import Feature
 from Races import Race
+from Weapons import Weapon, Dice
 from Attributes import Attributes, AttributeType
 from Requirements import Requireable
-from Weapons import Weapon, Dice
 from Actions import Action
 from Feats import Feat
-from Classes import Class
 from Converter import Converter
+from Choices import Choice
+from Classes import Class
+from CharSheet import Character
 
 def getFiles(folder: str) -> list[str]:
     return [file for file in os.listdir("./"+folder) if file.split('.')[1] == "data"]
@@ -38,37 +38,21 @@ def getFeatures(actionDict: dict[str, Action]) -> dict[str, Feature]:
             needed = neededFeatures.get(subFeatureNames, [])            # This dict holds the data for features, each feature has a list of features required to build it as its key.
             needed.append((name, varChanges, methodCalls, subFeatures, actions)) # With this we can start with Features that need no data, and then build more featues that build off of these first ones, etc
             neededFeatures[subFeatureNames] = needed
-            #(effects, values) = Feature.parseEffectsValues([file.rstrip() for file in f.readlines()])
-            #features[name] = Feature(name, effects, values)
+
     # We can now systematically resolve the Features
-            
-    #print("hello", len(neededFeatures))
     availableFeatures = dict[str, Feature]()
-    #printDict(neededFeatures)
     for feature in neededFeatures[()]: # no sub features required
         availableFeatures[feature[0]] = Feature.createFeature(feature[0], availableFeatures, feature[1], feature[2], feature[3], feature[4])
-        #print(feature[0], "is here")
-    #printDict(availableFeatures)
+        
     countOfFeatures = sum([len(feature[1]) for feature in neededFeatures.items()])
     neededFeatures.pop((), None)
-    #print("hello", len(availableFeatures), len(neededFeatures), countOfFeatures)
-    #printDict(neededFeatures)
-    #print(neededFeatures.keys())
-    #print(neededFeatures.values())
     while len(availableFeatures.items()) < countOfFeatures:
         keys = list(neededFeatures.keys())
         for key in keys: # Gices the list of names of needed subfeatures
-            #print(keys)
             if(set(key).issubset(set(availableFeatures.keys()))): # Continue only if all subFeatures are in availableFeatures
                 for feature in neededFeatures[key]:
                     availableFeatures[feature[0]] = Feature.createFeature(feature[0], availableFeatures, feature[1], feature[2], feature[3], feature[4])
                 neededFeatures.pop(key) # These were resolved and don't need to be tested again
-
-    # All unfinished features are just subfeatures, they should not be used outside of their super-features, so we remove them from our dictionary.
-    #for feature in list(availableFeatures.items()):
-    #    if not (feature[1].isFinished()):
-    #        availableFeatures.pop(feature[0])
-
     return availableFeatures
 
 def getRaces(allFeatures: dict[str, Feature]) -> dict[str, Race]:
@@ -107,20 +91,64 @@ def getFeats(actions: dict[str, Action], features: dict[str, Feature]) -> dict[s
             feats[name] = Feat(name, lines, actions, features)
     return feats
 
-def getClasses(features: dict[str, Feature]) -> dict[str, Class]:
+def getChoices(features: dict[str, Feature]) -> dict[str, Choice]:
+    choices = {}
+    for file in getFiles("Choices"):
+        with open("./Choices/"+file) as f:
+            name = file.split(".")[0]
+            f = [file.rstrip() for file in f.readlines()]
+            choices[name] = Choice.parseChoice(name, f, features)
+    return choices
+
+def getClasses(features: dict[str, Feature], choices: dict[str, Choice]) -> dict[str, Class]:
     classes = {}
     for fileName in getFiles("Classes"):
         with open("./Classes/"+fileName) as file:
             name = fileName.split(".")[0]
             lines = [file.rstrip() for file in file.readlines()]
-            classes[name] = Class(name, lines, features)
+            classes[name] = Class(name, lines, features, choices)
     return classes
+
+def saveBuild(buildInfo: str, fileName: str):
+    try:
+        with open("./Saved Builds/"+fileName+".txt", "w") as outFile:
+            outFile.write(buildInfo)
+    except:
+        print("Failed saving...")
+
+settingsConv = {
+    "onlyGoodStats" : 0,
+    0 : lambda value: value == "True",
+    "maxCharacters" : 1,
+    1 : lambda value: int(value),
+    "cleanseEvery" : 2,
+    2 : lambda value: int(value),
+    "levelToReach" : 3,
+    3 : lambda value: int(value),
+    "keepOnlyUnique" : 4,
+    4 : lambda value: value == "True",
+    "multiProcessing" : 5,
+    5 : lambda value: value == "True"
+    }
+
+def getSettings():
+    args = None
+    with open("./Settings.txt") as file:
+        lines = file.readlines()
+        args = [None for i in range(len(lines))]
+        for line in lines:
+            name, value = line.rstrip().split(" = ")
+            position = settingsConv[name]
+            args[position] = settingsConv[position](value)
+    return args
+
 
 if __name__ == "__main__":
     def printDict(dictionary: dict):
         for key in dictionary.keys():
             print(dictionary[key])
 
+    getSettings()
     actions = getActions()
     printDict(actions)
     print("\n")
@@ -141,7 +169,11 @@ if __name__ == "__main__":
     printDict(feats)
     print("\n")
 
-    classes = getClasses(features)
+    choices = getChoices(features)
+    printDict(choices)
+    print("\n")
+
+    classes = getClasses(features, choices)
     printDict(classes)
     print("\n")
 
@@ -172,22 +204,22 @@ if __name__ == "__main__":
     print(features["ASI"])
     print(chareSpecial.attr.ASIAvailable)
     
-    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    print(" + ".join([str(chareSpecial.battleStats.extraCritDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(4):
         chareSpecial.increaseClass(classes["Barbarian"])
     chareSpecial.classes.chooseSubclass(classes["Barbarian"], classes["Barbarian"].subclasses["Path of Giants"], chareSpecial)
-    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    print(" + ".join([str(chareSpecial.battleStats.extraCritDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(9):
         chareSpecial.increaseClass(classes["Barbarian"])
-    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    print(" + ".join([str(chareSpecial.battleStats.extraCritDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(3):
         chareSpecial.increaseClass(classes["Barbarian"])
-    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+    print(" + ".join([str(chareSpecial.battleStats.extraCritDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     for i in range(3):
-        chareSpecial.increaseClass(classes["Barbarian"])
-    print(" + ".join([str(chareSpecial.battleStats.critDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
+        chareSpecial.increaseClass(classes["Fighter"])
+    print(" + ".join([str(chareSpecial.battleStats.extraCritDice * number)+"d"+str(face) for (number, face) in chareSpecial.battleStats.weapon.damageDice]), chareSpecial.battleStats.attacksPerAction, "Attacks")
     chareSpecial.printCharacter()
-
+    chareSpecial.classes.chooseSubclass(classes["Fighter"], classes["Fighter"].subclasses["Champion"], chareSpecial)
     print("Classes for Stats:")
     testAvailable(classes.values(), chareSpecial, False)
 

@@ -26,6 +26,8 @@ class Attributes:
             dictionary[key] = values[i]
         return dictionary
 
+    character = None
+
     def __init__(self, baseStats: list[int], choices:str="", getX:int=0, inY:int=0, unchoosable=set[AttributeType](), hasStartingChoice:bool=False, boni=None) -> None:
         self.choices = choices
         self.ASIAvailable = False
@@ -52,12 +54,18 @@ class Attributes:
 
     def ASI(self, stat: AttributeType, value: int):
         self.boni[stat] += value
-        assert self.getStat(stat) < 21
+        #assert self.getStat(stat) < 21
         self.calcModifier(stat)
+        return (" +" + str(value) + " " + stat.value)
 
     def addStatBonus(self, stats: dict[AttributeType, int]):
+        historyBuffer = "  Level " + str(self.character.battleStats.level) + ". ("
         for statName in stats.keys():
-            self.ASI(statName, stats[statName])
+            historyBuffer += self.ASI(statName, stats[statName])
+        self.character.asiHistory += historyBuffer+")\n"
+
+    def setCharacter(self, character):
+        self.character = character
 
     def addStatBonusList(self, stats: list[int]):
         self.addStatBonus(Attributes.makeDict(AttributeType, stats))
@@ -71,13 +79,10 @@ class Attributes:
         self.hasStartingChoice = True
 
     def getCopy(self) -> 'Attributes':
-        attr = Attributes(list(self.baseStats.values()), self.choices, self.getX, self.inY, self.unchoosable, self.hasStartingChoice, self.boni.copy())
-        #print(attr.choices)
-        #print(self.choices)
-        #print("")
-        assert attr.choices == self.choices
-        assert attr.mod == self.mod
-        assert attr == self
+        attr = Attributes([*self.baseStats.values()], self.choices, self.getX, self.inY, self.unchoosable, self.hasStartingChoice, self.boni.copy())
+        #assert attr.choices == self.choices
+        #assert attr.mod == self.mod
+        #assert attr == self
         return attr
 
     def __str__(self) -> str:

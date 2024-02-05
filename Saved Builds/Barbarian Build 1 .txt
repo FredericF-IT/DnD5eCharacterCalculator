@@ -1,0 +1,46 @@
+Human Level 20
+16 levels Barbarian (Path of Giants), 3 levels Rogue, 1 levels Fighter
+     | Str | Dex | Con | Int | Wis | Cha |
+Base | 14  | 15  | 14  |  8  |  8  |  8  |  
+All  | 15  | 20  | 15  |  9  |  9  |  9  | 
+Mod  |  2  |  5  |  2  | -1  | -1  | -1  | 
+Feats:
+  Crossbow Expert
+  Sharpshooter
+  FightingStyles: Archery
+They have advantage on Attacks.
+Attacks per action: 2
+Crit range: 20 Crit dice: 2
+Damage bonus: 14 toHit bonus -3
+Proficiency Bonus: 6
+Other dice: 2d6
+CrossbowOneHand 1d6 uses DEX
+They had level progression:
+  1. Barbarian
+  2. Rogue
+  3. Barbarian
+  4. Barbarian
+  5. Barbarian
+  6. Barbarian
+  7. Barbarian
+  8. Barbarian
+  9. Barbarian
+  10. Barbarian
+  11. Barbarian
+  12. Barbarian
+  13. Barbarian
+  14. Barbarian
+  15. Barbarian
+  16. Barbarian
+  17. Rogue
+  18. Rogue
+  19. Barbarian
+  20. Fighter
+They got these features:
+  Crossbow Expert
+  Sharpshooter
+  FightingStyles: Archery
+They got these stat increases:
+  Level 1. ( +1 Str +1 Dex +1 Con +1 Int +1 Wis +1 Cha)
+  Level 9. ( +0 Str +2 Dex +0 Con +0 Int +0 Wis +0 Cha)
+  Level 13. ( +0 Str +2 Dex +0 Con +0 Int +0 Wis +0 Cha)

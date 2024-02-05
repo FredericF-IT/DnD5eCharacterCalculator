@@ -1,1 +1,1 @@
-var[battleStats/critDice ? int]
+var[battleStats/extraCritDice ? int]

@@ -1,0 +1,45 @@
+Half-Orc Level 20
+11 levels Fighter, 9 levels Barbarian (Path of Giants)
+     | Str | Dex | Con | Int | Wis | Cha |
+Base | 14  |  8  | 12  |  8  |  8  |  8  |  
+All  | 20  | 10  | 13  |  8  |  8  |  8  | 
+Mod  |  5  |  0  |  1  | -1  | -1  | -1  | 
+Feats:
+  Polearm Master
+  Great Weapon Master
+They have advantage on Attacks.
+Attacks per action: 3
+Crit range: 20 Crit dice: 2
+Damage bonus: 13 toHit bonus -5
+Proficiency Bonus: 6
+Other dice: 1d6
+Polearm 1d10 uses STR
+They had level progression:
+  1. Fighter
+  2. Fighter
+  3. Fighter
+  4. Fighter
+  5. Fighter
+  6. Fighter
+  7. Fighter
+  8. Fighter
+  9. Fighter
+  10. Fighter
+  11. Fighter
+  12. Barbarian
+  13. Barbarian
+  14. Barbarian
+  15. Barbarian
+  16. Barbarian
+  17. Barbarian
+  18. Barbarian
+  19. Barbarian
+  20. Barbarian
+They got these features:
+  Polearm Master
+  Great Weapon Master
+They got these stat increases:
+  Level 1. ( +2 Str +0 Dex +1 Con +0 Int +0 Wis +0 Cha)
+  Level 8. ( +2 Str +0 Dex +0 Con +0 Int +0 Wis +0 Cha)
+  Level 15. ( +2 Str +0 Dex +0 Con +0 Int +0 Wis +0 Cha)
+  Level 19. ( +0 Str +2 Dex +0 Con +0 Int +0 Wis +0 Cha)

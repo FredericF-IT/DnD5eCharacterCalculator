@@ -1,4 +1,4 @@
-Req: method[attr/getStat(Str=attrTpye)] > 13 int
+Req: method[attr/getStat(Str=attrTpye)] > 12 int
 Stats: Str=Both Con=Both Dex=Good Int=Dump
 Lvl: 1: Rage
 Lvl: 2: RecklessAttack
