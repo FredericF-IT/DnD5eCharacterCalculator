@@ -1,5 +1,5 @@
-Req: method[attr/getStat(Str=attrTpye)] > 12 int
-or Req: method[attr/getStat(Dex=attrTpye)] > 12 int
+Req: method[attr/getStat(Str=attrType)] > 12 int
+or Req: method[attr/getStat(Dex=attrType)] > 12 int
 Stats: Str=Either Dex=Either Con=Good
 Lvl: 1: Choice>FightingStyles
 Lvl: 3: Subclass>Fighter
@@ -18,4 +18,5 @@ Subclasses
 -----------
 Name: Champion
 Lvl: 3: ChangeCritRange>-1
+Lvl: 10: Choice>FightingStyles
 Lvl: 15: ChangeCritRange>-1

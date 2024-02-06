@@ -2,27 +2,34 @@ from Requirements import Requirement, Requireable
 from Actions import Action
 from Features import Feature
 from CharSheet import Character
+from Choices import Choice
 
 class Feat(Requireable):
-    def __init__(self, name: str, lines: list[str], actions: dict[str, Action], features: dict[str, Feature]) -> None:
+    def __init__(self, name: str, lines: list[str], actions: dict[str, Action], features: dict[str, Feature], choice: dict[str, Choice]) -> None:
         self.name = name
         self.requirements = list[Requirement]()
         self.actions = set[Action]()
-        self.features = []
+        self.features = list[Feature]()
+        self.choices = list[Choice]()
         for line in lines:
             words = line.split(" ")
-            if(words[0] == "Req:"):
-                self.requirements.append(Requirement(words[1], words[2], words[3], words[4]))
-            elif(words[0] == "Action:"):
-                self.actions.add(actions[words[1]])
-            elif(words[0] == "Feature:"):
-                feature = features[words[1]].getCopy()
+            identifier = words.pop(0)
+            if(identifier == "Req:"):
+                self.requirements.append(Requirement(*words))
+            elif(identifier == "Action:"):
+                self.actions.add(actions[words[0]])
+            elif(identifier == "Feature:"):
+                feature = features[words[0]].getCopy()
                 self.features.append(feature)
+            elif(identifier == "Choice:"):
+                choice = choice[words[0]]
+                self.choices.append(choice)
     
     def applyToCharacter(self, character: Character):
         character.applyFeatures(self.features)
         character.gottenFeatures.append(self.name)
         character.actions = character.actions.union(self.actions)
+        character.classes.addChoice(self.choices)
 
     def __str__(self) -> str:
         return self.name + \

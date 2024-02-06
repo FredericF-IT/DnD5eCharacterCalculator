@@ -1,2 +1,2 @@
-var[battleStats/flatDamageBonus 10 int]
 var[battleStats/flatToHitBonus -5 int]
+bonusDamage[GWMDamage]

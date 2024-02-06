@@ -8,13 +8,15 @@ class Choice():
 
     def onePerChoice(self, character) -> list:
         newCharacters = []
-        character.classes.choice = []
         for feature in self.featureChoices:
             if not (feature[1] == None or feature[1].testRequirement(character)):
                 continue
+            fullTitle = self.name+": "+feature[0].name
+            if(fullTitle in character.gottenFeatures):
+                continue
             newCharacter = character.getCopy()
             newCharacter.applyFeatures([feature[0]])
-            newCharacter.gottenFeatures.append(self.name+": "+feature[0].name)
+            newCharacter.gottenFeatures.append(fullTitle)
             newCharacters.append(newCharacter)
         return newCharacters
 

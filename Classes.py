@@ -3,6 +3,8 @@ from Features import Feature
 from Attributes import Usefullness, AttributeType
 from Choices import Choice
 
+from math import ceil
+
 class SubClass:
     def __init__(self, name, lines: list[str], features: dict[str, Feature], choices: dict[str, Choice]) -> None:
         self.name = name
@@ -12,14 +14,14 @@ class SubClass:
             words = line.split(" ")
             #assert words[0] == "Lvl:"
             level = int(words[1][:-1])-1
-            (featureList, choiceList) = SubClass.parseClassFeatures(features, choices, words)
+            (featureList, choiceList) = SubClass.parseClassFeatures(features, choices, words[1:])
             self.choicesAtLevel[level] = choiceList
             self.featuresAtLevel[level] = featureList
     
     def parseClassFeatures(features: dict[str, Feature], choices: dict[str, Choice], words: list[str]):
         featureList = []
         choiceList = []
-        featureNames = words[2].split("|")
+        featureNames = words[1].split("|")
         for featureName in featureNames:
             nameParts = featureName.split(">")
             if(nameParts[0] == "Choice"):
@@ -52,25 +54,29 @@ class Class(Requireable):
                 break # have now begun subclasses
             i += 1
             words = line.split(" ")
-            if(words[0] == "Lvl:"):
-                lvlNumber = int(words[1][:-1])
+            identifier = words.pop(0)
+            if(identifier == "Lvl:"):
+                lvlNumber = int(words[0][:-1])
                 (featureList, choiceList) = SubClass.parseClassFeatures(features, choices, words)
                 if(len(featureList) == 0):
                     self.choicesAtLevel[lvlNumber-1] = choiceList
                 else:
                     self.featuresAtLevel[lvlNumber-1] = featureList
-            elif(words[0] == "Stats:"):
-                for word in words[1:]:
+            elif(identifier == "Stats:"):
+                for word in words:
                     stat, usefullness = word.split("=")
                     self.statUsefullness[AttributeType(stat)] = Usefullness[usefullness]
-            elif(words[0] == "Req:"):
-                self.requirement1 = Requirement(words[1], words[2], words[3], words[4])
-            elif(words[0] == "or Req:"):
-                self.requirement2 = Requirement(words[1], words[2], words[3], words[4])
+            elif(identifier == "Req:"):
+                self.requirement1 = Requirement(*words)
+                self.comboType = ""
+            elif(identifier == "or"):
+                self.requirement2 = Requirement(*words[1:])
                 self.reqType = lambda x, y, character: x.testRequirement(character) or y.testRequirement(character)
-            elif(words[0] == "and Req:"):
-                self.requirement2 = Requirement(words[1], words[2], words[3], words[4])
+                self.comboType = "or"
+            elif(identifier == "and"):
+                self.requirement2 = Requirement(*words[1:])
                 self.reqType = lambda x, y, character: x.testRequirement(character) and y.testRequirement(character)
+                self.comboType = "and"
         # Main class is done # we are at -----------
         i += 3
         self.subclasses = dict[str, SubClass]()
@@ -87,9 +93,7 @@ class Class(Requireable):
                 else:
                     data.append(line)
             self.subclasses[name] = SubClass(name, data, features, choices)
-            #print(self.subclasses[name])
-        
-        #print(name, [[str(feature) for feature in features[1]] for features in self.featuresAtLevel.items()])
+
         self.preCalcUsefulls()
 
     def getFeaturesAtLevel(self, Level: int, subclassName: str):
@@ -124,7 +128,7 @@ class Class(Requireable):
 
     def __str__(self) -> str:
         return self.name + \
-            "\n  If "+" and ".join([str(req) for req in self.getRequirements()]) + "\n  Features:" + "\n" + \
+            "\n  If "+(" "+self.comboType+" ").join([str(req) for req in self.getRequirements()]) + "\n  Features:" + "\n" + \
             "\n".join(["    Level "+str(items[0]+1)+": "+", ".join([feature.name for feature in items[1]]) for items in self.featuresAtLevel.items()])+ \
             ("\nChoices:\n"+"\n".join(["    Level "+str(items[0]+1)+": "+", ".join([choice.name for choice in items[1]]) for items in self.choicesAtLevel.items()]) if len(self.choicesAtLevel.keys()) > 0 else "")
 
@@ -133,7 +137,8 @@ class ClassList:
     levelOfClasses = dict[str, int]()
     subclassesTaken = dict[str, str]()
     subClassChoice = ""
-    choice = None
+    choice = []
+    charLevel = 0
     def __init__(self, startingClass: Class, character, isEmpty:bool=False) -> None:
         if(isEmpty):
             return
@@ -141,12 +146,20 @@ class ClassList:
         self.classesInOrderTaken = []
         self.increaseClass(startingClass, character)
 
-    def increaseClass(self, newClassLevel: Class, character) -> Choice:
+    def levelUp(self):
+        self.charLevel += 1
+        self.profBonus = ceil(self.charLevel/4.0) + 1
+
+    def increaseClass(self, newClassLevel: Class, character):
+        self.levelUp()
         self.classesInOrderTaken.append(newClassLevel)
         level = self.levelOfClasses.get(newClassLevel.name, 0) 
         self.levelOfClasses[newClassLevel.name] = level + 1
         character.applyFeatures(newClassLevel.getFeaturesAtLevel(level, self.subclassesTaken.get(newClassLevel.name, None)))
-        self.choice = newClassLevel.choicesAtLevel.get(level, None)
+        self.choice = newClassLevel.choicesAtLevel.get(level, self.choice)
+
+    def addChoice(self, choice: list[Choice]):
+        self.choice.extend(choice)
 
     def chooseSubclass(self, mainClass: Class, subclass: SubClass, character):
         self.subClassChoice = ""
@@ -159,6 +172,8 @@ class ClassList:
         copyList.levelOfClasses = self.levelOfClasses.copy()
         copyList.classesInOrderTaken = [*self.classesInOrderTaken]
         copyList.subclassesTaken = self.subclassesTaken.copy()
+        copyList.charLevel = self.charLevel
+        copyList.profBonus = self.profBonus
         if not (self.choice == None):
             copyList.choice = [*self.choice]
         copyList.subClassChoice = self.subClassChoice

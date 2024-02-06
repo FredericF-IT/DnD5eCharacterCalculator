@@ -1,2 +1,3 @@
 Archery Req: var[battleStats/weapon/wType] = CrossbowOneHand|CrossbowHeavy str
 GreatWeaponFighting Req: var[battleStats/weapon/wType] = Greataxe|Greatsword|Polearm str
+Dueling Req: var[battleStats/weapon/wType] = OneHanded|CrossbowOneHand|Finesse|Light str

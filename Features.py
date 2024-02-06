@@ -1,73 +1,16 @@
-from Converter import Converter
+from Converter import Value
+from BonusDamage import BonusDamage
+
 from copy import deepcopy
 
-class Value:
-        convValue = None
-
-        def __init__(self, value: str, typeName: str) -> None:
-            if(value == "?"): value = None
-            if(typeName == "?"): typeName = None
-            self.value = value
-            self.typeName = typeName
-            if self.isFinished():
-                self.convValue = Converter.convert(self.typeName, self.value)
-
-        def getValue(self):
-            #assert self.isFinished()
-            return self.convValue
-        
-        def isFinished(self) -> bool:
-            return not (self.value == None or self.typeName == None)
-        
-        def insertNew(self, thing: str) -> bool: # Inserts information from superfeatures in order of existing holes
-            if(self.value == None):
-                self.value = thing
-            elif(self.typeName == None):
-                self.typeName = thing
-            if self.isFinished():
-                self.convValue = Converter.convert(self.typeName, self.value)
-                return True
-            return False # Tells us if insertion has completed this value
-        
-        def __str__(self) -> str:
-            return ("?" if self.value == None else self.value)+" of type "+("?" if self.typeName == None else self.typeName)
-
 class Feature:
-    def __init__(self, name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list['Feature'], actions: list) -> None:
+    def __init__(self, name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list['Feature'], actions: list, bonusDamage: list[BonusDamage]) -> None:
         self.name = name
         self.varChanges = varChanges
         self.methodCalls = methodCalls
         self.subFeatures = subFeatures
         self.actions = set(actions)
-
-    def parseFeature(lines: list[str], actionDict: dict) -> (list[(str, Value)], list[(str, list[Value])], list[(str, list[str])]):
-        varChanges = []
-        methodCalls = []
-        subFeatures = []
-        actions = []
-        
-        def getArgumentValues(values: str) -> list[Value]:
-            valueList = []
-            for valueAndType in values.split("|"):
-                value, valueType = valueAndType.split("=")
-                valueList.append(Value(value, valueType))
-            return valueList
-
-        for line in lines:
-            accessType, values = line.split("[")
-            if(accessType == "var"):            # var[path value valueType]
-                path, value, valueType = values[:-1].split(" ")
-                varChanges.append((path, Value(value, valueType)))
-            elif(accessType == "method"):       # method[path(value=valueType|value2=valueType2|...)] 
-                path, values = values[:-2].split("(")
-                methodCalls.append((path, getArgumentValues(values)))
-            elif(accessType == "feature"):      # feature[featureName value|value2|...]
-                featureName, values = values[:-1].split(" ")
-                subFeatures.append((featureName, values.split("|")))
-            elif(accessType == "action"):       # action[actionName]
-                actionName = values[:-1]
-                actions.append(actionDict[actionName])
-        return (varChanges, methodCalls, subFeatures, actions)
+        self.bonusDamage = bonusDamage
 
     def fillInValues(self, holeValues: list[str]):
         for varChange in self.varChanges:
@@ -91,13 +34,13 @@ class Feature:
 
     # Feature can not fill in holes of own values, the only missing values are in subfeatures.
     # Not all created features are "finished" at runtime, as they may only appear as filled in subfeatures that are never used on their own. 
-    def createFeature(name: str, features: dict[str, 'Feature'], varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list[(str, list[str])], actions: list) -> 'Feature':
+    def createFeature(features: dict[str, 'Feature'], name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list[(str, list[str])], actions: list, bonusDamage: list[str]) -> 'Feature':
         filledSubFeatures = []
         for subFeature in subFeatures:
             feature = features[subFeature[0]].getCopy()
             feature.fillInValues(subFeature[1])
             filledSubFeatures.append(feature)
-        return Feature(name, varChanges, methodCalls, filledSubFeatures, actions)
+        return Feature(name, varChanges, methodCalls, filledSubFeatures, actions, bonusDamage)
         
     def isFinished(self) -> bool:
         for varChange in self.varChanges:
@@ -124,9 +67,10 @@ class Feature:
         character.actions = character.actions.union(self.actions)
         for subFeature in self.subFeatures:
             subFeature.applyFeature(character)
+        character.battleStats.bonusDamage.extend(self.bonusDamage)
 
     def getCopy(self):
-        return Feature(self.name, [*self.varChanges], deepcopy(self.methodCalls), [*self.subFeatures], self.actions.copy()) # first two need deepcopy as they are tuples in a list, the last one is just a list of Values
+        return Feature(self.name, [*self.varChanges], deepcopy(self.methodCalls), [*self.subFeatures], self.actions.copy(), [*self.bonusDamage]) # first two need deepcopy as they are tuples in a list, the last one is just a list of Values
     
     def __str__(self) -> str:
         return self.name + ":" +\

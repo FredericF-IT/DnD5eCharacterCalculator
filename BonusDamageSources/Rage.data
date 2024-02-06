@@ -1,0 +1,4 @@
+Type: Every Attack
+Req: var[battleStats/weapon/usedMod] = Str attrType
+WeaponDamage: False
+Damage: Rage table

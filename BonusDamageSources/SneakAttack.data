@@ -1,0 +1,5 @@
+Type: Once Per Turn
+Req: method[battleStats/hasAdvantageFirst(Dex=attrType)] = True bool
+Req: var[battleStats/weapon/wType] = Finesse|CrossbowOneHand|CrossbowHeavy str
+WeaponDamage: True
+Damage: SneakAttack table

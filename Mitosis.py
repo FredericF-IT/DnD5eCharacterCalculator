@@ -11,10 +11,6 @@ from Classes import Class
 from Attributes import Attributes, AttributeType, Usefullness
 from Actions import Action
 
-#For Processor pickling
-#def upgradeCharacterLevel(self: 'CombinationExplorer', characters: list[Character], aClass: Class) -> list[Character]:
-#    return CombinationExplorer.upgradeCharacterLevel(self, characters, aClass)
-
 skillCost = lambda score: score-8 + max(score - 13, 0) # The cost is 0 at 8, and increases by 1 until a score of 13. At 14 and 15 the increase goes to 2. You cannot chose a score higher then 15 in pointbuy.
 
 scoreBuyableWithPoints = lambda points: 8 + min(points, 5) + min(floor(max(points - 5, 0)/2), 2)# How high can i make a score with x points? 
@@ -265,6 +261,7 @@ class CombinationExplorer:
                         actionsIfWeapon.append(actions["TwoWeaponFighting"])
                     for stats in attributes[aClass]:
                         newCharacter = Character(stats.getCopy(), race, weapon, set(actionsIfWeapon), aClass)
+
                         newCharacters = []
                         if(newCharacter.battleStats.firstLevelFeat):
                             for feat in self.feats:
@@ -272,7 +269,12 @@ class CombinationExplorer:
                                     improvedCharacter = newCharacter.getCopy()
                                     feat.applyToCharacter(improvedCharacter)
                                     newCharacters.append(improvedCharacter)
-                        newCharacters = newCharacters if not newCharacters == [] else [newCharacter]
+
+                        newCharacterCopy = [*newCharacters] if not newCharacters == [] else [newCharacter]
+                        newCharacters.clear()
+                        for character in newCharacterCopy:
+                            newCharacters.extend(Test.doChoice(character)) # Choices from feats or classes
+
                         for character in newCharacters:
                             if(newCharacter.attr.hasStartingChoice):
                                 characters.extend(CombinationExplorer.findPointDistribution(usefullness, usefullStats, reversedUsefullness, newCharacter.attr.unchoosable, newCharacter.attr.getX, newCharacter.attr.inY, newCharacter))
@@ -282,8 +284,7 @@ class CombinationExplorer:
 
             print(aClass.name, "has", len(characters)-lastCharCount, "good combinations.")
             lastCharCount = len(characters)
-        print(len(characters))
-        for character in characters:
+        for character in [*characters]:
             for stat in AttributeType:
                 if(character.attr.getStat(stat) >= 18):
                     print(character.attr.baseStats[stat], character.attr.boni[stat], character.attr.getStat(stat))
@@ -340,39 +341,55 @@ class Test:
     def upgradePerClass(feats: list[Feat], characters: list[Character], aClass: Class):
         newCharacters =  list[Character]()
         for character in characters:
-            tempCharacters = []
             if not (aClass.canTakeClass(character)):
                 continue
             character.increaseClass(aClass)
-            getsChoice = character.classes.choice
-            if not(getsChoice == None):
-                for choice in getsChoice:
-                    tempCharacters.extend(choice.onePerChoice(character))
 
-            choseSubClass = False
-            if not (character.classes.subClassChoice == ""):
-                choseSubClass = True
-                for subClass in aClass.subclasses.values():
-                    subClassCharacter = character.getCopy()
-                    subClassCharacter.classes.chooseSubclass(aClass, subClass, subClassCharacter)
-                    tempCharacters.append(subClassCharacter)
-            if not (character.attr.ASIAvailable):
-                if not choseSubClass:
+            tempCharacters = []
+            tempBaseCharacters = Test.doChoice(character) # choice from the class specifically
+
+            for character in tempBaseCharacters:
+                if not (character.classes.subClassChoice == ""):
+                    for subClass in aClass.subclasses.values():
+                        subClassCharacter = character.getCopy()
+                        subClassCharacter.classes.chooseSubclass(aClass, subClass, subClassCharacter)
+                        tempCharacters.append(subClassCharacter)
+                else:
                     tempCharacters.append(character)
-                newCharacters.extend(tempCharacters)
-                continue
 
-            character.attr.ASIAvailable = False
-            
-            for feat in feats:
-                if(feat.isAvailable(character) and not feat.name in character.gottenFeatures):
-                    featCharacter = character.getCopy()
-                    feat.applyToCharacter(featCharacter)
-                    tempCharacters.append(featCharacter)
-            
-            baseClass = character.classes.classesInOrderTaken[0]
-            usefullStats = baseClass.mostUsefullAttrTypes
-            dumpStats = set(baseClass.reversedUsefullness.get(Usefullness.Dump, []))
-            tempCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, dumpStats, character))
+            tempBaseCharacters = [*tempCharacters]
+            tempCharacters.clear()
+
+            for character in tempBaseCharacters:
+                if not (character.attr.ASIAvailable):
+                    tempCharacters.append(character)
+                    continue
+                character.attr.ASIAvailable = False
+                
+                for feat in feats:
+                    if(feat.isAvailable(character) and not feat.name in character.gottenFeatures):
+                        featCharacter = character.getCopy()
+                        feat.applyToCharacter(featCharacter)
+                        tempCharacters.extend(Test.doChoice(featCharacter)) # might get new choice from feat
+                
+                baseClass = character.classes.classesInOrderTaken[0] # NOTE Might want to change this to aClass to improve the one they are taking this level
+                usefullStats = baseClass.mostUsefullAttrTypes
+                dumpStats = set(baseClass.reversedUsefullness.get(Usefullness.Dump, []))
+                tempCharacters.extend(CombinationExplorer.goodASIAssignment(usefullStats, dumpStats, character))
             newCharacters.extend(tempCharacters)
         return newCharacters
+    
+    def doChoice(characterBase: Character) ->  list[Character]:
+        getsChoice = characterBase.classes.choice
+        choiceCharacters = [characterBase]
+        if not(getsChoice == []):
+            for choice in getsChoice:
+                nextChoice = [*choiceCharacters]
+                choiceCharacters.clear()
+                for choiceCharacter in nextChoice:
+                    choiceCharacters.extend(choice.onePerChoice(choiceCharacter))
+            for choiceCharacter in choiceCharacters:
+                choiceCharacter.classes.choice = []
+        if(choiceCharacters == []):
+            return [characterBase]
+        return choiceCharacters

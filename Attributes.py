@@ -59,7 +59,7 @@ class Attributes:
         return (" +" + str(value) + " " + stat.value)
 
     def addStatBonus(self, stats: dict[AttributeType, int]):
-        historyBuffer = "  Level " + str(self.character.battleStats.level) + ". ("
+        historyBuffer = "  Level " + str(self.character.classes.charLevel) + ". ("
         for statName in stats.keys():
             historyBuffer += self.ASI(statName, stats[statName])
         self.character.asiHistory += historyBuffer+")\n"

@@ -4,10 +4,9 @@ from Features import Feature, Value
 from Races import Race
 from BattleStats import BattleStats
 from Classes import Class, ClassList
-from Actions import Action
 
 class Character:
-    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set[Action], startingClass: Class, isEmpty:bool=False) -> None:
+    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set, startingClass: Class, isEmpty:bool=False) -> None:
         if(isEmpty):
             return
         self.attr = attr
@@ -18,14 +17,14 @@ class Character:
         self.battleStats = BattleStats(weapon)
         self.race = race
         self.actions = actions
+        self.classes = ClassList(startingClass, self)
         self.applyFeatures(race.getRaceFeatures())
         self.attr.addStatBonus(race.getStatBonus())
-        self.classes = ClassList(startingClass, self)
         #assert len(self.classes.classesInOrderTaken) == 1
         if not (self.attr.choices == ""):
             self.attr.calculateChoices() # character has applied his feautures now, so we always know if they have some first level stat choice.
 
-    def makeCharacter(attr: Attributes, battleStats: BattleStats, race: Race, actions: Action, classes: ClassList, gottenFeatures: list[Feature], damageHistory: list[int], asiHistory: str):
+    def makeCharacter(attr: Attributes, battleStats: BattleStats, race: Race, actions: set, classes: ClassList, gottenFeatures: list[Feature], damageHistory: list[int], asiHistory: str):
         newChar = Character(None, None, None, None, None, True)
         newChar.attr = attr
         newChar.attr.setCharacter(newChar)
@@ -45,19 +44,21 @@ class Character:
             Feature.applyFeature(feature, self)
 
     def increaseClass(self, newClassLevel: Class):
-        self.battleStats.levelUp()
         self.classes.increaseClass(newClassLevel, self)
 
     def printCharacter(self):
         print(self)
 
     def __str__(self) -> str:
-        return  self.race.name +" Level "+ str(self.battleStats.level) +\
+        return  self.race.name +" Level "+ str(self.classes.charLevel) +\
                 str(self.classes)  + "\n" +\
                 str(self.attr)  + "\n" +\
                 (("Feats:\n  "+"\n  ".join([feat for feat in self.gottenFeatures]) + "\n") if len(self.gottenFeatures) > 0 else "") +\
-                ("They have advantage on Attacks.\n" if self.battleStats.getsAdvantageAll else "") +\
+                ("They have advantage on Attacks.\n" if self.battleStats.getsAdvantage.get(self.battleStats.weapon.usedMod) else \
+                    ("They have advantage on their first Attack.\n" if self.battleStats.getsAdvantageFirst.get(self.battleStats.weapon.usedMod) else "")) +\
+                "Proficiency Bonus: " + str(self.classes.profBonus) + "\n" +\
                 str(self.battleStats)  + "\n" +\
+                "Damage bonus:\n  " + "\n  ".join([bonusDamage.getImprovedStr(self) for bonusDamage in self.battleStats.bonusDamage if bonusDamage.isAvailable(self)]) + "\n"+\
                 str(self.battleStats.weapon)
                 
 

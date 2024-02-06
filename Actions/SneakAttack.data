@@ -1,5 +1,0 @@
-Once Per Turn
-Req: var[battleStats/getsAdvantageFirst] = True bool
-Req: var[battleStats/weapon/wType] = Finesse|CrossbowOneHand|CrossbowHeavy str
-DamageTable: SneakAttack
-ModToDamage: False
