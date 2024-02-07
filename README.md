@@ -18,5 +18,7 @@ with the number that responds to the appropriate monitor.
 
 To use:  
 Start Analysis.py in the commandline  
-All settings are explained inside the file, but most settings in Analysis.py are overwritten with those from Settings.txt
-Extra recommendations for settings at end of Project PDF.
+All settings are explained inside the file, but most settings in Analysis.py are overwritten with those from Settings.txt    
+Extra recommendations for settings at end of Project PDF.    
+
+There is no subset here, the runtime seemed low enough to reproduce all results with the given settings.
