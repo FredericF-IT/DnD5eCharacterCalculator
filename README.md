@@ -12,10 +12,11 @@ sudo apt-get install python3-tk
 sudo apt-get install python3-pillow  
 sudo apt-get install python3-pil.imagetk  
 It may happen that the program gives you the error "_tkinter.TclError: couldn't connect to display "whatever"  
-You can fix this by using this  
+You can fix this by using this in the terminal
 export DISPLAY=:0  
 with the number that responds to the appropriate monitor.  
 
 To use:  
 Start Analysis.py in the commandline  
 All settings are explained inside the file, but most settings in Analysis.py are overwritten with those from Settings.txt
+Extra recommendations for settings at end of Project PDF.

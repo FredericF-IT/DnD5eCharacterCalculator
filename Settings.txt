@@ -1,6 +1,6 @@
 onlyGoodStats = True
 maxCharacters = 1500
 cleanseEvery = 3
-levelToReach = 10
+levelToReach = 20
 keepOnlyUnique = True
 multiProcessing = False

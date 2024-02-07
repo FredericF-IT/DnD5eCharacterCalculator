@@ -5,18 +5,25 @@ class Choice():
     def __init__(self, name: str, featureChoices: list[(Feature, Requirement)]) -> None:
         self.featureChoices = featureChoices
         self.name = name
+        self.fullTitles = dict[str, str]()
+        for feature in self.featureChoices:
+            self.fullTitles[feature[0].name] = self.name+": "+feature[0].name
+
+    def isAnAvailableOption(self, character, feature: (Feature, Requirement)):
+        return (feature[1] == None or feature[1].testRequirement(character)) and \
+                not (self.fullTitles[feature[0].name] in character.gottenFeatures)
+
+    def hasAvailableOptions(self, character):
+        return any([self.isAnAvailableOption(character, feature) for feature in self.featureChoices])
 
     def onePerChoice(self, character) -> list:
         newCharacters = []
         for feature in self.featureChoices:
-            if not (feature[1] == None or feature[1].testRequirement(character)):
-                continue
-            fullTitle = self.name+": "+feature[0].name
-            if(fullTitle in character.gottenFeatures):
+            if not (self.isAnAvailableOption(character, feature)):
                 continue
             newCharacter = character.getCopy()
             newCharacter.applyFeatures([feature[0]])
-            newCharacter.gottenFeatures.append(fullTitle)
+            newCharacter.gottenFeatures.append(self.fullTitles[feature[0].name])
             newCharacters.append(newCharacter)
         return newCharacters
 
@@ -33,5 +40,5 @@ class Choice():
         return Choice(name, choices)
     
     def __str__(self) -> str:
-        return  self.name + "\n" + \
-                "\n".join([str(feature[0]) for feature in self.featureChoices])
+        return  self.name + "\n  " + \
+                "\n  ".join([feature[0].name for feature in self.featureChoices])

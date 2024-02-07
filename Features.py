@@ -76,4 +76,5 @@ class Feature:
         return self.name + ":" +\
             ("\n  " + ", ".join([varChange[0]+"="+str(varChange[1]) for varChange in self.varChanges]) if len(self.varChanges) > 0 else "")+\
             ("\n  " + ", ".join([methodCall[0]+"("+", ".join([str(value) for value in methodCall[1]])+")" for methodCall in self.methodCalls]) if len(self.methodCalls) > 0 else "")+\
+            ("\n  " + ", ".join([str(bonus) for bonus in self.bonusDamage]) if len(self.bonusDamage) > 0 else "")+\
             ("\n" + "\n".join([("  "+str(subFeature).replace("\n", "\n  ")) for subFeature in self.subFeatures]) if len(self.subFeatures) > 0 else "")

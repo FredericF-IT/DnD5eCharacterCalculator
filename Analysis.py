@@ -46,9 +46,13 @@ class characterSelection(Enum):
 #        displayList = [*levelLists[level-1]]    # TODO
 
 def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
-    level = characters[0].classes.charLevel-1
-    print("Ranking level", str(level+1)+"...")
-    acAtLevel = expectedAC[level]
+    level = characters[0].classes.charLevel
+    isLastLevel = level == levelToReach
+    needsCleanse = isLastLevel or (not (maxCharacters == None) and level > 1 and level % cleanseEvery == 0)
+    
+    print("Ranking level", str(level)+"...")
+    
+    acAtLevel = expectedAC[level - 1]
     for character in characters:
         bestActMain = None
         bestActMainValue = 0
@@ -56,7 +60,7 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
         bestActBonusValue = 0
         perRoundDamage = 0
         for action in character.actions:
-            if not (action.isAvailable(character)): # Rogues get Sneak Attack at first level, but only get advantage reliably at second level.
+            if not (action.isAvailable(character)): # Example: Rogues get Sneak Attack at first level, but only get advantage reliably at second level.
                 continue 
             damage = action.executeAttack(character, acAtLevel)
             if(action.resource == ActionType.action):
@@ -71,12 +75,15 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
                 bestActBonus = action
         perRoundDamage += round(bestActMainValue + bestActBonusValue, 6)
         character.damageHistory.append(perRoundDamage)
-        targetList.append((perRoundDamage, (character.classes.classesInOrderTaken[0], character, bestActMain, bestActBonus)))
-    targetList.sort(key=lambda entry: entry[0], reverse=True)
+        if(isLastLevel or keepLowerLevels or needsCleanse): # Still need to do everything except this, as we want the damageHistory at every level.
+            targetList.append((perRoundDamage, (character.classes.classesInOrderTaken[0], character, bestActMain, bestActBonus)))
 
-    if (maxCharacters == None or (level) % cleanseEvery > 0):
-        print("Skipped level", level+1, "culling.")
+    if not needsCleanse:
+        print("Skipped level", level, "culling.")
         return characters
+    
+    targetList.sort(key=lambda entry: entry[0], reverse=True)
+    
     characters = []
     keepEntries = []
     for aClass in classes.values():
@@ -85,7 +92,7 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
         for entry in targetList:
             if not (entry[1][0].name == aClass.name):
                 continue
-            if(level > 0 and keepOnlyUnique): # We want variety at the first level
+            if(level > 1 and keepOnlyUnique): # We want variety at the first level
                 damage = round(entry[0], 6)
                 if(haveSeenDamage.get(damage, False)):
                     continue
@@ -97,8 +104,9 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
             if(charactersLeft <= 0):
                 break
     targetList.clear() # Only keep best entries, but have to re-sort because we went by class
-    targetList.extend(keepEntries)
-    targetList.sort(key=lambda entry: entry[0], reverse=True)
+    if(isLastLevel or keepLowerLevels):
+        targetList.extend(keepEntries)
+        targetList.sort(key=lambda entry: entry[0], reverse=True)
     print(str(len(characters)) + " survive.")
     return characters
 
@@ -128,8 +136,8 @@ def getBestPerClass(level: int) -> list[(list[list[int]], list[list[int]])]:
         buildHistory = []
         for i, character in enumerate(top5Different):
             characterStr = str(character[1])
-
-            buildText.append("Build "+str(i+1)+" does "+actionUses[i]+"\n\n"+characterStr)
+            bonusDamageStr = character[1].getDamageBonus()
+            buildText.append("Build "+str(i+1)+" does "+actionUses[i]+"\n"+bonusDamageStr+"\n\n"+characterStr)
             buildDamage.append(character[1].damageHistory)
             buildHistory.append(characterStr+getProgressionString(character[1]))
         perClassData.append((buildText, buildDamage, buildHistory))
@@ -179,7 +187,7 @@ def showDifferentResults(listIndex: int, mode : characterSelection = characterSe
         
     def savePlotImage(canvas: list[FigureCanvasTkAgg]):
         imageName = input("Give a name fo the file: ")
-        canvas[0].get_tk_widget().postscript(file="./Saved Builds/"+imageName+".eps")
+        canvas[0].get_tk_widget().postscript(file="Saved Builds/"+imageName+".eps")
 
     canvas = [None]
     toolbar = [None]
@@ -284,19 +292,17 @@ if __name__ == "__main__":
     characters = combi.createCharactersLvl1(actions, onlyGoodStats)
     print("Calculating damage...")
     print("Level 1...")
-    print("We now have", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not maxCharacters == None else ""))
+    print("We now have", len(characters), "characters.")
     characters = rankBuilds(characters, levelLists[0])
     currentTime = time()
     print("Time so far:", timePretty(currentTime - startTime)+"\n")
     for i in range(1, levelToReach):
-        if not (keepLowerLevels):
-            levelLists[i-1].clear()
         print("Level "+str(i+1)+"...")
         if(multiProcessing):
             characters = Test.upgradeCharacterLevel(list(classes.values()), list(feats.values()), characters)
         else:
             characters = CombinationExplorer.upgradeCharacterLevel(list(classes.values()), list(feats.values()), characters)
-        print("We now have", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not (maxCharacters == None or (i) % cleanseEvery > 0) else ""))
+        print("We now have", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not (maxCharacters == None or (i + 1) % cleanseEvery > 0) else ""))
         characters = rankBuilds(characters, levelLists[i])
         currentTime = time()
         print("Time so far:", timePretty(currentTime - startTime)+"\n")

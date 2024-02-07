@@ -5,7 +5,7 @@ from CharSheet import Character
 from Choices import Choice
 
 class Feat(Requireable):
-    def __init__(self, name: str, lines: list[str], actions: dict[str, Action], features: dict[str, Feature], choice: dict[str, Choice]) -> None:
+    def __init__(self, name: str, lines: list[str], actions: dict[str, Action], features: dict[str, Feature], choiceDict: dict[str, Choice]) -> None:
         self.name = name
         self.requirements = list[Requirement]()
         self.actions = set[Action]()
@@ -22,7 +22,7 @@ class Feat(Requireable):
                 feature = features[words[0]].getCopy()
                 self.features.append(feature)
             elif(identifier == "Choice:"):
-                choice = choice[words[0]]
+                choice = choiceDict[words[0]]
                 self.choices.append(choice)
     
     def applyToCharacter(self, character: Character):
@@ -35,7 +35,11 @@ class Feat(Requireable):
         return self.name + \
             ("\n" if len(self.requirements) > 0 else "") + "\n".join(["  If "+str(req) for req in self.requirements]) + \
             ("\n  Actions: " if len(self.actions) > 0 else "") + ", ".join([action.name for action in self.actions]) + \
+            ("\n  Choices:\n    " if len(self.choices) > 0 else "") + "\n    ".join([str(choice) for choice in self.choices]).replace("\n", "\n    ") + \
             ("\n  Features: " if len(self.features) > 0 else "") + ", ".join([action.name for action in self.features])
 
     def getRequirements(self) -> list[Requirement]:
         return self.requirements
+    
+    def isAvailable(self, character) -> bool:
+        return super().isAvailable(character) and all([choice.hasAvailableOptions(character) for choice in self.choices])

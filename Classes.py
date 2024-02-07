@@ -96,10 +96,16 @@ class Class(Requireable):
 
         self.preCalcUsefulls()
 
-    def getFeaturesAtLevel(self, Level: int, subclassName: str):
-        features = self.featuresAtLevel.get(Level, [])
+    def getChoicesAtLevel(self, level: int, subclassName: str):
+        choices = self.choicesAtLevel.get(level, [])
         if not (subclassName == None):
-            features.extend(self.subclasses[subclassName].featuresAtLevel.get(Level, []))
+            choices.extend(self.subclasses[subclassName].choicesAtLevel.get(level, []))
+        return choices
+
+    def getFeaturesAtLevel(self, level: int, subclassName: str):
+        features = self.featuresAtLevel.get(level, [])
+        if not (subclassName == None):
+            features.extend(self.subclasses[subclassName].featuresAtLevel.get(level, []))
         return features
 
     def canTakeClass(self, character) -> bool:
@@ -155,8 +161,9 @@ class ClassList:
         self.classesInOrderTaken.append(newClassLevel)
         level = self.levelOfClasses.get(newClassLevel.name, 0) 
         self.levelOfClasses[newClassLevel.name] = level + 1
-        character.applyFeatures(newClassLevel.getFeaturesAtLevel(level, self.subclassesTaken.get(newClassLevel.name, None)))
-        self.choice = newClassLevel.choicesAtLevel.get(level, self.choice)
+        subclass = self.subclassesTaken.get(newClassLevel.name, None)
+        character.applyFeatures(newClassLevel.getFeaturesAtLevel(level, subclass))
+        self.choice = newClassLevel.getChoicesAtLevel(level, subclass)
 
     def addChoice(self, choice: list[Choice]):
         self.choice.extend(choice)

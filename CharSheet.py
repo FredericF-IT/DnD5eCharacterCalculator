@@ -58,9 +58,10 @@ class Character:
                     ("They have advantage on their first Attack.\n" if self.battleStats.getsAdvantageFirst.get(self.battleStats.weapon.usedMod) else "")) +\
                 "Proficiency Bonus: " + str(self.classes.profBonus) + "\n" +\
                 str(self.battleStats)  + "\n" +\
-                "Damage bonus:\n  " + "\n  ".join([bonusDamage.getImprovedStr(self) for bonusDamage in self.battleStats.bonusDamage if bonusDamage.isAvailable(self)]) + "\n"+\
                 str(self.battleStats.weapon)
                 
+    def getDamageBonus(self) -> str:
+        return "Damage bonus:\n  " + "\n  ".join([bonusDamage.getImprovedStr(self) for bonusDamage in self.battleStats.bonusDamage if bonusDamage.isAvailable(self)])
 
     def getVariable(self, path: str):
         current = self

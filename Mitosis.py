@@ -93,7 +93,7 @@ class CombinationExplorer:
                     pointsLeft = 27 - skillCost(i)
                     statCombinations.append((pointsLeft, CombinationExplorer.putStatAtPosition(i, mainStat, [8,8,8,8,8,8])))
 
-            if(Usefullness.Both in importance): #should start with both high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
+            elif(Usefullness.Both in importance): #should start with both high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
                 stat1Index = list(importance).index(Usefullness.Both)
                 stat2Index = list(importance).index(Usefullness.Both, stat1Index+1)
                 mainStats1 = keys[stat1Index]
@@ -107,12 +107,11 @@ class CombinationExplorer:
                         stats = CombinationExplorer.putStatAtPosition(j, mainStats2, stats)
                         statCombinations.append((pointsLeftB, stats))
 
-            if(Usefullness.Either in importance): #should start with one as high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
+            elif(Usefullness.Either in importance): #should start with one as high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
                 stat1Index = list(importance).index(Usefullness.Either)
                 stat2Index = list(importance).index(Usefullness.Either, stat1Index+1)
                 possibleStats1 = keys[stat1Index]
                 possibleStats2 = keys[stat2Index]
-
                 for i in range (14, 16):
                     pointsLeft = 27 - skillCost(i)
                     statCombinations.append((pointsLeft, CombinationExplorer.putStatAtPosition(i, possibleStats1, [8,8,8,8,8,8])))
@@ -161,26 +160,36 @@ class CombinationExplorer:
                 attributes[startingClass] = [Attributes(stats[1]) for stats in statCombinationsV2]
         return attributes
     
-    seenvariations = dict[(list[AttributeType], int, int), list[list[int]]]()
+    #seenvariations = dict[(list[AttributeType], int, int), list[list[int]]]()
+    0, 2, 3
 
-    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> set[tuple[int]]:
-        lastVersion = CombinationExplorer.seenvariations.get((possibleScores, getPlusX, yTimes), None)
-        if(not lastVersion == None): 
-            return lastVersion
-        possibleVers = []
-        baseVersion = [(getPlusX if i < yTimes else 0) for i in range(6)]
-        allVersions = list(set(permutations(baseVersion)))
-        possibleSpaces = [0,0,0,0,0,0]
-        for i, stat in enumerate(AttributeType):
-            if(stat in possibleScores):
-                possibleSpaces[i] = getPlusX
-        if(len(possibleScores) == yTimes):
-            CombinationExplorer.seenvariations[(possibleScores, getPlusX, yTimes)] = [possibleSpaces]
-            return [possibleSpaces]
-
-        possibleVers = [version for version in allVersions if all([ver <= possibleSpaces[i] for i, ver in enumerate(allVersions[0])])] # only allow versions that are zero where possibleSpaces is zero
-        CombinationExplorer.seenvariations[(possibleScores, getPlusX, yTimes)] = possibleVers
-        return possibleVers
+    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> set[tuple[int]]: #Usually: cant pick same score twice if yTimes > 1
+        positionList = []#[0,0,0,0,0,0]
+        for score in possibleScores: # get all places a bonus could be
+            positionList.append(positions[score])
+        statPossible = []
+        for position in positionList:
+            newVariation = [0,0,0,0,0,0]
+            newVariation[position] = getPlusX
+            statPossible.append(newVariation)
+        for times in range(0, yTimes-1):
+            assert yTimes > 1
+            statCopy = [*statPossible]
+            statPossible.clear()
+            for variation in statCopy:
+                foundPlace = False
+                for position in positionList:
+                    if(variation[position] > 0):
+                        continue
+                    foundPlace = True 
+                    newVariation = [*variation]
+                    newVariation[position] = getPlusX
+                    statPossible.append(newVariation)
+                assert foundPlace # no place found to allocate
+        statPossibleUnique = set([tuple(stat) for stat in statPossible])
+        statPossible = [list(stat) for stat in statPossibleUnique]
+        assert len(statPossible) > 0
+        return statPossible
 
     def findPointDistribution(usefullness: list[AttributeType], usefullStats: set[AttributeType], reversedUsefullness, exceptForIn: set[int], getPlusX: int, yTimes: int, character: Character) -> list[Character]:
         possibleImprovements = []
@@ -188,19 +197,20 @@ class CombinationExplorer:
             if((stat, Usefullness.Either) in usefullness):
                 eitherStat = reversedUsefullness[Usefullness.Either]
                 whichIsDump = 1
-                if (character.attr.getStat(eitherStat[0]) == 8): # check which is the dump stat
+                if (character.attr.getStat(eitherStat[0]) == 8): # check which was the dump stat during creation
                     whichIsDump = 0
-                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(usefullStats - set([eitherStat[1-whichIsDump]])), getPlusX, yTimes))
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(usefullStats - set([eitherStat[1-whichIsDump]]), getPlusX, yTimes))
             elif((stat, Usefullness.Both) in usefullness):
                 bothStats = reversedUsefullness[Usefullness.Both]
-                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(bothStats), getPlusX, yTimes))
+                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(bothStats, getPlusX, yTimes))
             elif((stat, Usefullness.Main) in usefullness):
-                otherStat = reversedUsefullness[Usefullness.Good] # Assumes the class has at least one main and one good / usefull Ability Score
-                otherStat.append(stat)
-                possibleImprovements.extend(CombinationExplorer.getPossibleCombinations(tuple(otherStat), getPlusX, yTimes))
-
+                otherStats = reversedUsefullness[Usefullness.Good] # In case there are two possible, we want the second to be used
+                assert len(otherStats) > 0
+                for secondStat in otherStats:
+                    possibleImprovements.extend(CombinationExplorer.getPossibleCombinations([stat, secondStat], getPlusX, yTimes))
         newCharacters = []
         seenDict = []
+        assert len(possibleImprovements) > 0
         for improvement in possibleImprovements:
             if(improvement in seenDict):
                 continue
@@ -242,7 +252,7 @@ class CombinationExplorer:
             newCharacters.append(character)
         return newCharacters
 
-    def createCharactersLvl1(self, actions: list[Action], onlyGoodStats) -> list[Character]:
+    def createCharactersLvl1(self, actions: list[Action], onlyGoodStats: bool) -> list[Character]:
         characters = list[Character]()
         lastCharCount = 0
         attributes = self.createAttributes(onlyGoodStats)
@@ -391,5 +401,7 @@ class Test:
             for choiceCharacter in choiceCharacters:
                 choiceCharacter.classes.choice = []
         if(choiceCharacters == []):
+            characterBase.classes.choice = []
+            characterBase.gottenFeatures.append("No applicable feature left")
             return [characterBase]
         return choiceCharacters
