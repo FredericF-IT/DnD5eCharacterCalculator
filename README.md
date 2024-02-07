@@ -7,18 +7,22 @@
 
 
 ## Subsection
-Possibly needed dependent on OS:  
+Needed downloads:  
+python3 -m pip install -U matplotlib  
 sudo apt-get install python3-tk  
 sudo apt-get install python3-pillow  
 sudo apt-get install python3-pil.imagetk  
+Applying all of these lets the script run on the TACAS23 image.  
 It may happen that the program gives you the error "_tkinter.TclError: couldn't connect to display "whatever"  
-You can fix this by using this in the terminal
+You can fix this by using this in the terminal:  
 export DISPLAY=:0  
-with the number that responds to the appropriate monitor.  
+using the number that responds to the appropriate monitor.  
 
-To use:  
+To start the main program:  
 Start Analysis.py in the commandline  
 All settings are explained inside the file, but most settings in Analysis.py are overwritten with those from Settings.txt    
 Extra recommendations for settings at end of Project PDF.    
+Extra information and a few test cases are in CharIO.py, which can also be run.  
 
-There is no subset here, the runtime seemed low enough to reproduce all results with the given settings.
+What part of the report this recreates:
+There is no subset here, the runtime is low enough to reproduce all results with the given settings.
