@@ -1,9 +1,10 @@
-from Weapons import Dice, Weapon
 from enum import Enum
-from Converter import Converter
-from Requirements import Requirement, Requireable
-from CharSheet import Character
-from BonusDamage import BonusType
+
+from .Weapons import Dice, Weapon
+from .Converter import Converter
+from .Requirements import Requirement, Requireable
+from .CharSheet import Character
+from .BonusDamage import BonusType
 
 class ActionType(Enum):
     action = 'Action'

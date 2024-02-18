@@ -8,6 +8,15 @@ class AttributeType(Enum):
     INT = "Int"
     WIS = "Wis"
     CHA = "Cha"
+    
+positions = {
+    AttributeType.STR: 0,
+    AttributeType.DEX: 1,
+    AttributeType.CON: 2,
+    AttributeType.INT: 3,
+    AttributeType.WIS: 4,
+    AttributeType.CHA: 5,
+}
 
 class Usefullness(Enum):
     Main = 0 # Max out this one stat if possible

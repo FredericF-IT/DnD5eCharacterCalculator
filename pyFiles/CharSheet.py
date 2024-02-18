@@ -1,9 +1,9 @@
-from Weapons import Weapon
-from Attributes import Attributes
-from Features import Feature, Value
-from Races import Race
-from BattleStats import BattleStats
-from Classes import Class, ClassList
+from .Weapons import Weapon
+from .Attributes import Attributes
+from .Features import Feature, Value
+from .Races import Race
+from .BattleStats import BattleStats
+from .Classes import Class, ClassList
 
 class Character:
     def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set, startingClass: Class, isEmpty:bool=False) -> None:

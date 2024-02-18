@@ -1,6 +1,6 @@
-from Weapons import Weapon
-from BonusDamage import BonusDamage
-from Attributes import AttributeType
+from .Weapons import Weapon
+from .BonusDamage import BonusDamage
+from .Attributes import AttributeType
 
 class BattleStats:
     attacksPerAction = 1

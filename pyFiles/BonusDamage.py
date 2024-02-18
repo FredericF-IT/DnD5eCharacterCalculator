@@ -1,6 +1,7 @@
 from enum import Enum
-from Requirements import Requireable, Requirement
-from Converter import Converter, Dice, Table
+
+from .Requirements import Requireable, Requirement
+from .Converter import Converter, Dice, Table
 
 class BonusType(Enum):
     onePerTurn = 'Once Per Turn'

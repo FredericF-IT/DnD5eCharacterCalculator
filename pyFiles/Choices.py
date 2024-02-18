@@ -1,5 +1,5 @@
-from Features import Feature
-from Requirements import Requirement
+from .Features import Feature
+from .Requirements import Requirement
 
 class Choice():
     def __init__(self, name: str, featureChoices: list[(Feature, Requirement)]) -> None:

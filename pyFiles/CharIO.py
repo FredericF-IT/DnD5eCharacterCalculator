@@ -1,31 +1,33 @@
 import os
-from Features import Feature
-from Races import Race
-from Weapons import Weapon, Dice
-from Attributes import Attributes, AttributeType
-from Requirements import Requireable
-from Actions import Action
-from Feats import Feat
-from Converter import Converter
-from Choices import Choice
-from Classes import Class
-from CharSheet import Character
-from BonusDamage import BonusDamage
+
+from .Features import Feature
+from .Races import Race
+from .Weapons import Weapon, Dice
+from .Attributes import Attributes, AttributeType
+from .Requirements import Requireable
+from .Actions import Action
+from .Feats import Feat
+from .Converter import Converter
+from .Choices import Choice
+from .Classes import Class
+from .CharSheet import Character
+from .BonusDamage import BonusDamage
+
+DATA_PATH = "./data/"
 
 def getFiles(folder: str) -> list[str]:
-    return [file for file in os.listdir("./"+folder) if file.split('.')[1] == "data"]
-
+    return [file for file in os.listdir(DATA_PATH+folder) if file.split('.')[1] == "data"]
 
 def getFilesAndFolders(folder: str) -> list[str]: # only for better readable folder structure
-    files = [file for file in os.listdir("./"+folder) if ('.' in file and file.split('.')[1] == "data")]
-    folders = [file for file in os.listdir("./"+folder) if os.path.isdir("./"+folder+"/"+file)]
+    files = [file for file in os.listdir(DATA_PATH+folder) if ('.' in file and file.split('.')[1] == "data")]
+    folders = [file for file in os.listdir(DATA_PATH+folder) if os.path.isdir(DATA_PATH+folder+"/"+file)]
     for folderName in folders:
         files += [folderName+"/"+file for file in getFilesAndFolders(folder+"/"+folderName)]
     return files
 
 def readTables():
     for file in getFilesAndFolders("Tables/ClassFeatures"):
-        with open("./Tables/ClassFeatures/"+file) as f:
+        with open(DATA_PATH+"Tables/ClassFeatures/"+file) as f:
             fileOwner = file.split(".")[0]
             for line in f.readlines():
                 Converter.readTable(line.rstrip(), fileOwner)
@@ -33,7 +35,7 @@ def readTables():
 def getFeatures(actionDict: dict[str, Action], bonusDamageDict: dict[str, BonusDamage]) -> dict[str, Feature]:
     neededFeatures = dict[set[str], list[(list, list, list, list)]]()
     for file in getFilesAndFolders("Features"):
-        with open("./Features/"+file) as f:
+        with open(DATA_PATH+"Features/"+file) as f:
             name = file.split("/")[-1].split(".")[0]
             (varChanges, methodCalls, subFeatures, actions, bonusDamage) = Converter.parsePaths([file.rstrip() for file in f.readlines()], actionDict, bonusDamageDict)
             subFeatureNames = tuple([subFeature[0] for subFeature in subFeatures])
@@ -60,13 +62,13 @@ def getFeatures(actionDict: dict[str, Action], bonusDamageDict: dict[str, BonusD
 def getRaces(allFeatures: dict[str, Feature]) -> dict[str, Race]:
     races = {}
     for file in getFiles("Races"):
-        with open("./Races/"+file) as f:
+        with open(DATA_PATH+"Races/"+file) as f:
             Race.parseRace([file.rstrip() for file in f.readlines()], races, allFeatures)
     return races
 
 def getWeapons() -> dict[str, Weapon]:
     weapons = {}
-    with open("./Tables/Weapons.data") as f:
+    with open(DATA_PATH+"Tables/Weapons.data") as f:
         for line in f.readlines():
             wType, diceString, modType = line.rstrip().split(" ")
             weapons[wType] = Weapon(wType, Dice.parseDice(diceString), AttributeType(modType))
@@ -77,7 +79,7 @@ def getActions() -> dict[str, Action]:
     Action.initStaticData()
     actions = {}
     for file in getFiles("Actions"):
-        with open("./Actions/"+file) as f:
+        with open(DATA_PATH+"Actions/"+file) as f:
             name = file.split(".")[0]
             f = [file.rstrip() for file in f.readlines()]
             (resource, addStrToDamage, requirements, damageDieOverride) = Action.parseAction(f)
@@ -87,7 +89,7 @@ def getActions() -> dict[str, Action]:
 def getBonusDamageSources():
     bonusDamage = {}
     for file in getFiles("BonusDamageSources"):
-        with open("./BonusDamageSources/"+file) as f:
+        with open(DATA_PATH+"BonusDamageSources/"+file) as f:
             name = file.split(".")[0]
             lines = [file.rstrip() for file in f.readlines()]
             bonusDamage[name] = BonusDamage.parseBonusDamage(lines, name)
@@ -96,7 +98,7 @@ def getBonusDamageSources():
 def getChoices(features: dict[str, Feature]) -> dict[str, Choice]:
     choices = {}
     for file in getFiles("Choices"):
-        with open("./Choices/"+file) as f:
+        with open(DATA_PATH+"Choices/"+file) as f:
             name = file.split(".")[0]
             f = [file.rstrip() for file in f.readlines()]
             choices[name] = Choice.parseChoice(name, f, features)
@@ -105,7 +107,7 @@ def getChoices(features: dict[str, Feature]) -> dict[str, Choice]:
 def getFeats(actions: dict[str, Action], features: dict[str, Feature], choice: dict[str, Choice]) -> dict[str, Feat]:
     feats = {}
     for fileName in getFiles("Feats"):
-        with open("./Feats/"+fileName) as file:
+        with open(DATA_PATH+"Feats/"+fileName) as file:
             name = fileName.split(".")[0]
             lines = [file.rstrip() for file in file.readlines()]
             feats[name] = Feat(name, lines, actions, features, choice)
@@ -114,7 +116,7 @@ def getFeats(actions: dict[str, Action], features: dict[str, Feature], choice: d
 def getClasses(features: dict[str, Feature], choices: dict[str, Choice]) -> dict[str, Class]:
     classes = {}
     for fileName in getFiles("Classes"):
-        with open("./Classes/"+fileName) as file:
+        with open(DATA_PATH+"Classes/"+fileName) as file:
             name = fileName.split(".")[0]
             lines = [file.rstrip() for file in file.readlines()]
             classes[name] = Class(name, lines, features, choices)
@@ -144,7 +146,7 @@ settingsConv = {
 
 def getSettings():
     args = None
-    with open("./Settings.txt") as file:
+    with open("Settings.txt") as file:
         lines = file.readlines()
         args = [None for i in range(len(lines))]
         for line in lines:

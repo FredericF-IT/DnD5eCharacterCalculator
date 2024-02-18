@@ -1,11 +1,15 @@
-from Mitosis import CombinationExplorer, Test
-from CharSheet import Character
-from Actions import Action, ActionType
-from CharIO import getFeatures, getRaces, getWeapons, getActions, getFeats, getChoices, getClasses, getSettings, saveBuild, getBonusDamageSources
-
 from enum import Enum
 from time import time
 from math import ceil, floor
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+import tkinter as tk
+
+from .Mitosis import CombinationExplorer, Test
+from .CharSheet import Character
+from .Actions import Action, ActionType
+from .Classes import Class
+from .CharIO import getFeatures, getRaces, getWeapons, getActions, getFeats, getChoices, getClasses, getSettings, saveBuild, getBonusDamageSources
 
 # ------                                                  STANDARD SETTINGS                                                   ------ #
 onlyGoodStats = True    # Enable to not assign stats in scores that dont increase damage, heavily reducing the amount of starting permutations
@@ -45,7 +49,7 @@ class characterSelection(Enum):
 #    elif (mode == characterSelection.BestOverall):
 #        displayList = [*levelLists[level-1]]    # TODO
 
-def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
+def rankBuilds(characters: list[Character], targetList: list[(int, Character)], classes: dict[str, Class]):
     level = characters[0].classes.charLevel
     isLastLevel = level == levelToReach
     needsCleanse = isLastLevel or (not (maxCharacters == None) and level > 1 and level % cleanseEvery == 0)
@@ -110,14 +114,10 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)]):
     print(str(len(characters)) + " survive.")
     return characters
 
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-import tkinter as tk
-
-def getBestPerClass(level: int) -> list[(list[list[int]], list[list[int]])]:
+def getBestPerClass(level: int, classes: list[Class]) -> list[(list[list[int]], list[list[int]])]:
     #global displayList
     perClassData = []
-    for aClass in classes.values():
+    for aClass in classes:
         top5Different = [(0, None)]
         actionUses = []
         i = 1
@@ -149,10 +149,10 @@ def getProgressionString(character: Character):
     result += "\nThey got these stat increases:\n"+character.asiHistory
     return result
 
-def showDifferentResults(listIndex: int, mode : characterSelection = characterSelection.BestAtEnd):
+def showDifferentResults(listIndex: int, classes: dict[str, Class], mode : characterSelection = characterSelection.BestAtEnd):
     #rankBuildsFinally(listIndex+1, mode)
 
-    perClassData = getBestPerClass(listIndex)
+    perClassData = getBestPerClass(listIndex, classes.values())
 
     window = tk.Tk()
 
@@ -269,7 +269,7 @@ def getDamageString(entry):
     return str(round(entry[0], 6)) + " damage using:\n" + character[2].name + (" x"+str(character[1].battleStats.attacksPerAction) if extraAttack else "") + \
         (" and "+character[3].name if not character[3] == None else "")
 
-def printLevelResults(listIndex: int):  
+def printLevelResults(listIndex: int, characters: list[Character]):  
     print("Top 10 at Level "+str(listIndex+1)+":")   
     for entry in levelLists[listIndex][:10]:
         print(getDamageString(entry))
@@ -277,7 +277,7 @@ def printLevelResults(listIndex: int):
         print("")
     print("We now have", len(characters), "characters.")
 
-if __name__ == "__main__":
+def analyzeClasses():
     actions = getActions()
     bonusDamage = getBonusDamageSources()
     features = getFeatures(actions, bonusDamage)
@@ -286,24 +286,25 @@ if __name__ == "__main__":
     choices = getChoices(features)
     feats = getFeats(actions, features, choices)
     classes = getClasses(features, choices)
+    classesUnnamed = list(classes.values())
 
     startTime = time()
-    combi = CombinationExplorer(feats.values(), weapons.values(), races.values(), classes.values())
+    combi = CombinationExplorer(feats.values(), weapons.values(), races.values(), classesUnnamed)
     characters = combi.createCharactersLvl1(actions, onlyGoodStats)
     print("Calculating damage...")
     print("Level 1...")
     print("We now have", len(characters), "characters.")
-    characters = rankBuilds(characters, levelLists[0])
+    characters = rankBuilds(characters, levelLists[0], classes)
     currentTime = time()
     print("Time so far:", timePretty(currentTime - startTime)+"\n")
     for i in range(1, levelToReach):
         print("Level "+str(i+1)+"...")
         if(multiProcessing):
-            characters = Test.upgradeCharacterLevel(list(classes.values()), list(feats.values()), characters)
+            characters = Test.upgradeCharacterLevel(classesUnnamed, list(feats.values()), characters)
         else:
-            characters = CombinationExplorer.upgradeCharacterLevel(list(classes.values()), list(feats.values()), characters)
+            characters = CombinationExplorer.upgradeCharacterLevel(classesUnnamed, list(feats.values()), characters)
         print("We now have", len(characters), "characters. "+("(Only the strongest "+str(maxCharacters)+" survive per class)" if not (maxCharacters == None or (i + 1) % cleanseEvery > 0) else ""))
-        characters = rankBuilds(characters, levelLists[i])
+        characters = rankBuilds(characters, levelLists[i], classes)
         currentTime = time()
         print("Time so far:", timePretty(currentTime - startTime)+"\n")
     
@@ -318,7 +319,7 @@ if __name__ == "__main__":
             mode = characterSelection.BestOverall if mode == characterSelection.BestAtEnd else characterSelection.BestAtEnd
             print("Now ranking by: "+mode.value)
         elif(levelNorm == "help"):
-            print("Exit - to stop the program")
+            print("Exit - to return to main menu")
             #print("Swap - to use different ranking mode") NOTE not implemented
         else:
             try:
@@ -330,5 +331,5 @@ if __name__ == "__main__":
                 print("Level not in range, please try again.\n")
             else:
                 #rankBuildsFinally(level, characterSelection.BestOverall)
-                showDifferentResults(level-1, mode)
+                showDifferentResults(level-1, classes, mode)
         print("\n\n")

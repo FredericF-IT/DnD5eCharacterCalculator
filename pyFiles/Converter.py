@@ -1,5 +1,5 @@
-from Attributes import AttributeType
-from Weapons import Dice
+from .Attributes import AttributeType
+from .Weapons import Dice
 
 class Table:
     def __init__(self, entryPerLevel: list, ownerClass: str, dataType: str, tableName: str) -> None:

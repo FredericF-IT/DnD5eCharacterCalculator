@@ -3,13 +3,13 @@ from itertools import permutations
 from multiprocessing import cpu_count
 from concurrent.futures import ProcessPoolExecutor
 
-from Feats import Feat
-from Weapons import Weapon
-from Races import Race
-from CharSheet import Character
-from Classes import Class
-from Attributes import Attributes, AttributeType, Usefullness
-from Actions import Action
+from .Feats import Feat
+from .Weapons import Weapon
+from .Races import Race
+from .CharSheet import Character
+from .Classes import Class
+from .Attributes import Attributes, AttributeType, Usefullness, positions
+from .Actions import Action
 
 skillCost = lambda score: score-8 + max(score - 13, 0) # The cost is 0 at 8, and increases by 1 until a score of 13. At 14 and 15 the increase goes to 2. You cannot chose a score higher then 15 in pointbuy.
 
@@ -17,15 +17,6 @@ scoreBuyableWithPoints = lambda points: 8 + min(points, 5) + min(floor(max(point
                                                                                          # 8 - 13 with 0 - 5 points
                                                                                          # 14 or 15 with 7 or 9 points
                                                                                          # As max is 15, there can be points left over if the calculated score is bought
-
-positions = {
-    AttributeType.STR: 0,
-    AttributeType.DEX: 1,
-    AttributeType.CON: 2,
-    AttributeType.INT: 3,
-    AttributeType.WIS: 4,
-    AttributeType.CHA: 5,
-}
 
 class CombinationExplorer:
     def __init__(self, feats: list[Feat], weapons: list[Weapon], races: list[Race], classes: list[Class]) -> None:

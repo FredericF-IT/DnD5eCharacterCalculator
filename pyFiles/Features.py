@@ -1,7 +1,7 @@
-from Converter import Value
-from BonusDamage import BonusDamage
-
 from copy import deepcopy
+
+from .Converter import Value
+from .BonusDamage import BonusDamage
 
 class Feature:
     def __init__(self, name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list['Feature'], actions: list, bonusDamage: list[BonusDamage]) -> None:

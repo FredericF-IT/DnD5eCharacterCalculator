@@ -1,9 +1,9 @@
-from Requirements import Requireable, Requirement
-from Features import Feature
-from Attributes import Usefullness, AttributeType
-from Choices import Choice
-
 from math import ceil
+
+from .Requirements import Requireable, Requirement
+from .Features import Feature
+from .Attributes import Usefullness, AttributeType
+from .Choices import Choice
 
 class SubClass:
     def __init__(self, name, lines: list[str], features: dict[str, Feature], choices: dict[str, Choice]) -> None:
@@ -129,7 +129,7 @@ class Class(Requireable):
             reversedUsefullness[item[1]] = oldValue
         self.reversedUsefullness = reversedUsefullness
 
-    def getUsefulls(self) -> (list[(AttributeType, Usefullness)], set[AttributeType], dict[Usefullness, list[AttributeType]]):
+    def getUsefulls(self) -> tuple[list[(AttributeType, Usefullness)], set[AttributeType], dict[Usefullness, list[AttributeType]]]:
         return (self.mostUsefull, self.mostUsefullAttrTypes, self.reversedUsefullness)
 
     def __str__(self) -> str:

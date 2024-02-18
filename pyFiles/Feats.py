@@ -1,8 +1,8 @@
-from Requirements import Requirement, Requireable
-from Actions import Action
-from Features import Feature
-from CharSheet import Character
-from Choices import Choice
+from .Requirements import Requirement, Requireable
+from .Actions import Action
+from .Features import Feature
+from .CharSheet import Character
+from .Choices import Choice
 
 class Feat(Requireable):
     def __init__(self, name: str, lines: list[str], actions: dict[str, Action], features: dict[str, Feature], choiceDict: dict[str, Choice]) -> None:

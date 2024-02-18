@@ -1,4 +1,4 @@
-from Attributes import AttributeType
+from .Attributes import AttributeType
 
 class Dice:
     def parseDice(string: str) -> list[(int, int)]:

@@ -1,5 +1,5 @@
-from Features import Feature
-from Attributes import AttributeType, Attributes
+from .Features import Feature
+from .Attributes import AttributeType, Attributes
 
 class Race:
     def __init__(self, name: str, racialBonus: dict[AttributeType, int], racialFeatures: list[Feature]) -> None:
