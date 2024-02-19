@@ -9,7 +9,7 @@ class Choice():
         for feature in self.featureChoices:
             self.fullTitles[feature[0].name] = self.name+": "+feature[0].name
 
-    def isAnAvailableOption(self, character, feature: (Feature, Requirement)):
+    def isAnAvailableOption(self, character, feature: tuple[Feature, Requirement]):
         return (feature[1] == None or feature[1].testRequirement(character)) and \
                 not (self.fullTitles[feature[0].name] in character.gottenFeatures)
 

@@ -39,7 +39,7 @@ class Converter:
         dataType, data = data[:-1].split("[")
         Converter.tableData[tableName] = Table([Converter.convert(dataType, value) for value in data.split(", ")], tableOwner, dataType, tableName)
 
-    def parsePaths(lines: list[str], actionDict: dict, bonusDamageDict: dict) -> (list[(str, 'Value')], list[(str, list['Value'])], list[(str, list[str])]):
+    def parsePaths(lines: list[str], actionDict: dict, bonusDamageDict: dict) -> tuple[list[(str, 'Value')], list[(str, list['Value'])], list[(str, list[str])]]:
         varChanges = []
         methodCalls = []
         subFeatures = []

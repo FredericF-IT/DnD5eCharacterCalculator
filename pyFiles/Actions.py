@@ -33,7 +33,7 @@ class Action(Requireable):
         Action.hitChanceBook = Weapon.caclulateHitChances()
         Action.critChanceBook = Weapon.caclulateCritChances()
 
-    def parseAction(lines: list[str]) -> (ActionType, bool, list[Requirement], int):
+    def parseAction(lines: list[str]) -> tuple[ActionType, bool, list[Requirement], int]:
         i = 1
         requirements = []
         modToDamage = None # Should always be set, if not there: Error

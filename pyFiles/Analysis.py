@@ -9,7 +9,7 @@ from .Mitosis import CombinationExplorer, Test
 from .CharSheet import Character
 from .Actions import Action, ActionType
 from .Classes import Class
-from .CharIO import getFeatures, getRaces, getWeapons, getActions, getFeats, getChoices, getClasses, getSettings, saveBuild, getBonusDamageSources
+from .CharIO import CharIO
 
 # ------                                                  STANDARD SETTINGS                                                   ------ #
 onlyGoodStats = True    # Enable to not assign stats in scores that dont increase damage, heavily reducing the amount of starting permutations
@@ -21,7 +21,7 @@ keepLowerLevels = False  # You can choose to only keep the highest list if you r
 multiProcessing = False # Multiprocessing will allocate wild amounts of RAM, only turn on if your setup works for those settings. NOTE Deprecated in general
 # ------      ------      ------      ------      ------        ------        ------      ------      ------      ------      ------ #
 
-(onlyGoodStats, maxCharacters, cleanseEvery, levelToReach, keepOnlyUnique, multiProcessing) = getSettings()
+(onlyGoodStats, maxCharacters, cleanseEvery, levelToReach, keepOnlyUnique, multiProcessing) = CharIO.getSettings()
 
 if(levelToReach > 20 or levelToReach < 2):
     print("\nPlease use a level between 2 and 20 (inclusive). Change in settings file.")
@@ -183,11 +183,11 @@ def showDifferentResults(listIndex: int, classes: dict[str, Class], mode : chara
             print(buildHistory)
         else:
             buildName = input("Give a name fo the file: ")
-            saveBuild(buildHistory, buildName)
+            CharIO.saveBuild(buildHistory, buildName)
         
     def savePlotImage(canvas: list[FigureCanvasTkAgg]):
         imageName = input("Give a name fo the file: ")
-        canvas[0].get_tk_widget().postscript(file="Saved Builds/"+imageName+".eps")
+        canvas[0].get_tk_widget().postscript(file=CharIO.PARENT_PATH+"Saved Builds/"+imageName+".eps")
 
     canvas = [None]
     toolbar = [None]
@@ -278,14 +278,14 @@ def printLevelResults(listIndex: int, characters: list[Character]):
     print("We now have", len(characters), "characters.")
 
 def analyzeClasses():
-    actions = getActions()
-    bonusDamage = getBonusDamageSources()
-    features = getFeatures(actions, bonusDamage)
-    races = getRaces(features)
-    weapons = getWeapons()
-    choices = getChoices(features)
-    feats = getFeats(actions, features, choices)
-    classes = getClasses(features, choices)
+    actions = CharIO.getActions()
+    bonusDamage = CharIO.getBonusDamageSources()
+    features = CharIO.getFeatures(actions, bonusDamage)
+    races = CharIO.getRaces(features)
+    weapons = CharIO.getWeapons()
+    choices = CharIO.getChoices(features)
+    feats = CharIO.getFeats(actions, features, choices)
+    classes = CharIO.getClasses(features, choices)
     classesUnnamed = list(classes.values())
 
     startTime = time()

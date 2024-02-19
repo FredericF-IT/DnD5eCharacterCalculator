@@ -12,183 +12,203 @@ from .Choices import Choice
 from .Classes import Class
 from .CharSheet import Character
 from .BonusDamage import BonusDamage
+from .OperatingEnum import OperatingS
 
-DATA_PATH = "./data/"
 
-def getFiles(folder: str) -> list[str]:
-    return [file for file in os.listdir(DATA_PATH+folder) if file.split('.')[1] == "data"]
+class CharIO:
+    PATH_SEPERATOR = ""
+    DATA_PATH = ""
+    PARENT_PATH = ""
 
-def getFilesAndFolders(folder: str) -> list[str]: # only for better readable folder structure
-    files = [file for file in os.listdir(DATA_PATH+folder) if ('.' in file and file.split('.')[1] == "data")]
-    folders = [file for file in os.listdir(DATA_PATH+folder) if os.path.isdir(DATA_PATH+folder+"/"+file)]
-    for folderName in folders:
-        files += [folderName+"/"+file for file in getFilesAndFolders(folder+"/"+folderName)]
-    return files
+    def setSystem(system: OperatingS):
+        if(system == OperatingS.Linux):
+            CharIO.PATH_SEPERATOR = "/"
+            CharIO.DATA_PATH = "./data/"
+        if(system == OperatingS.Windows):
+            CharIO.PATH_SEPERATOR = "\\"
+            CharIO.DATA_PATH = os.path.abspath("data/")+"\\"
+        CharIO.PARENT_PATH = CharIO.DATA_PATH.replace("data"+CharIO.PATH_SEPERATOR, "")
+        print(CharIO.DATA_PATH)
+        print(CharIO.PARENT_PATH)
+        print(CharIO.PATH_SEPERATOR)
 
-def readTables():
-    for file in getFilesAndFolders("Tables/ClassFeatures"):
-        with open(DATA_PATH+"Tables/ClassFeatures/"+file) as f:
-            fileOwner = file.split(".")[0]
+    def getFiles(folder: str) -> list[str]:
+        return [file for file in os.listdir(CharIO.DATA_PATH+folder) if file.split('.')[1] == "data"]
+
+    def getFilesAndFolders(folder: str) -> list[str]: # only for better readable folder structure
+        files = [file for file in os.listdir(CharIO.DATA_PATH+folder) if ('.' in file and file.split('.')[1] == "data")]
+        folders = [file for file in os.listdir(CharIO.DATA_PATH+folder) if os.path.isdir(CharIO.DATA_PATH+folder+CharIO.PATH_SEPERATOR+file)]
+        for folderName in folders:
+            files += [folderName+CharIO.PATH_SEPERATOR+file for file in CharIO.getFilesAndFolders(folder+CharIO.PATH_SEPERATOR+folderName)]
+        return files
+
+    def readTables():
+        path = "Tables"+CharIO.PATH_SEPERATOR+"ClassFeatures"
+        for file in CharIO.getFilesAndFolders(path):
+            with open(CharIO.DATA_PATH + path + CharIO.PATH_SEPERATOR+file) as f:
+                fileOwner = file.split(".")[0]
+                for line in f.readlines():
+                    Converter.readTable(line.rstrip(), fileOwner)
+
+    def getFeatures(actionDict: dict[str, Action], bonusDamageDict: dict[str, BonusDamage]) -> dict[str, Feature]:
+        neededFeatures = dict[set[str], list[(list, list, list, list)]]()
+        for file in CharIO.getFilesAndFolders("Features"):
+            with open(CharIO.DATA_PATH + "Features" + CharIO.PATH_SEPERATOR + file) as f:
+                name = file.split(CharIO.PATH_SEPERATOR)[-1].split(".")[0]
+                (varChanges, methodCalls, subFeatures, actions, bonusDamage) = Converter.parsePaths([file.rstrip() for file in f.readlines()], actionDict, bonusDamageDict)
+                subFeatureNames = tuple([subFeature[0] for subFeature in subFeatures])
+                needed = neededFeatures.get(subFeatureNames, [])            # This dict holds the data for features, each feature has a list of features required to build it as its key.
+                needed.append((name, varChanges, methodCalls, subFeatures, actions, bonusDamage)) # With this we can start with Features that need no data, and then build more featues that build off of these first ones, etc
+                neededFeatures[subFeatureNames] = needed
+
+        # We can now systematically resolve the Features
+        availableFeatures = dict[str, Feature]()
+        for feature in neededFeatures[()]: # no sub features required
+            availableFeatures[feature[0]] = Feature.createFeature(availableFeatures, *feature)
+            
+        countOfFeatures = sum([len(feature[1]) for feature in neededFeatures.items()])
+        neededFeatures.pop((), None)
+        while len(availableFeatures.items()) < countOfFeatures:
+            keys = list(neededFeatures.keys())
+            for key in keys: # Gices the list of names of needed subfeatures
+                if(set(key).issubset(set(availableFeatures.keys()))): # Continue only if all subFeatures are in availableFeatures
+                    for feature in neededFeatures[key]:
+                        availableFeatures[feature[0]] = Feature.createFeature(availableFeatures, *feature)
+                    neededFeatures.pop(key) # These were resolved and don't need to be tested again
+        return availableFeatures
+
+    def getRaces(allFeatures: dict[str, Feature]) -> dict[str, Race]:
+        races = {}
+        for file in CharIO.getFiles("Races"):
+            with open(CharIO.DATA_PATH + "Races" + CharIO.PATH_SEPERATOR + file) as f:
+                Race.parseRace([file.rstrip() for file in f.readlines()], races, allFeatures)
+        return races
+
+    def getWeapons() -> dict[str, Weapon]:
+        weapons = {}
+        with open(CharIO.DATA_PATH + "Tables" + CharIO.PATH_SEPERATOR + "Weapons.data") as f:
             for line in f.readlines():
-                Converter.readTable(line.rstrip(), fileOwner)
+                wType, diceString, modType = line.rstrip().split(" ")
+                weapons[wType] = Weapon(wType, Dice.parseDice(diceString), AttributeType(modType))
+        return weapons
 
-def getFeatures(actionDict: dict[str, Action], bonusDamageDict: dict[str, BonusDamage]) -> dict[str, Feature]:
-    neededFeatures = dict[set[str], list[(list, list, list, list)]]()
-    for file in getFilesAndFolders("Features"):
-        with open(DATA_PATH+"Features/"+file) as f:
-            name = file.split("/")[-1].split(".")[0]
-            (varChanges, methodCalls, subFeatures, actions, bonusDamage) = Converter.parsePaths([file.rstrip() for file in f.readlines()], actionDict, bonusDamageDict)
-            subFeatureNames = tuple([subFeature[0] for subFeature in subFeatures])
-            needed = neededFeatures.get(subFeatureNames, [])            # This dict holds the data for features, each feature has a list of features required to build it as its key.
-            needed.append((name, varChanges, methodCalls, subFeatures, actions, bonusDamage)) # With this we can start with Features that need no data, and then build more featues that build off of these first ones, etc
-            neededFeatures[subFeatureNames] = needed
+    def getActions() -> dict[str, Action]:
+        CharIO.readTables()
+        Action.initStaticData()
+        actions = {}
+        for file in CharIO.getFiles("Actions"):
+            with open(CharIO.DATA_PATH + "Actions" + CharIO.PATH_SEPERATOR + file) as f:
+                name = file.split(".")[0]
+                f = [file.rstrip() for file in f.readlines()]
+                (resource, addStrToDamage, requirements, damageDieOverride) = Action.parseAction(f)
+                actions[name] = Action(name, resource, addStrToDamage, requirements, damageDieOverride)
+        return actions
 
-    # We can now systematically resolve the Features
-    availableFeatures = dict[str, Feature]()
-    for feature in neededFeatures[()]: # no sub features required
-        availableFeatures[feature[0]] = Feature.createFeature(availableFeatures, *feature)
-        
-    countOfFeatures = sum([len(feature[1]) for feature in neededFeatures.items()])
-    neededFeatures.pop((), None)
-    while len(availableFeatures.items()) < countOfFeatures:
-        keys = list(neededFeatures.keys())
-        for key in keys: # Gices the list of names of needed subfeatures
-            if(set(key).issubset(set(availableFeatures.keys()))): # Continue only if all subFeatures are in availableFeatures
-                for feature in neededFeatures[key]:
-                    availableFeatures[feature[0]] = Feature.createFeature(availableFeatures, *feature)
-                neededFeatures.pop(key) # These were resolved and don't need to be tested again
-    return availableFeatures
+    def getBonusDamageSources():
+        bonusDamage = {}
+        for file in CharIO.getFiles("BonusDamageSources"):
+            with open(CharIO.DATA_PATH + "BonusDamageSources" + CharIO.PATH_SEPERATOR + file) as f:
+                name = file.split(".")[0]
+                lines = [file.rstrip() for file in f.readlines()]
+                bonusDamage[name] = BonusDamage.parseBonusDamage(lines, name)
+        return bonusDamage
 
-def getRaces(allFeatures: dict[str, Feature]) -> dict[str, Race]:
-    races = {}
-    for file in getFiles("Races"):
-        with open(DATA_PATH+"Races/"+file) as f:
-            Race.parseRace([file.rstrip() for file in f.readlines()], races, allFeatures)
-    return races
+    def getChoices(features: dict[str, Feature]) -> dict[str, Choice]:
+        choices = {}
+        for file in CharIO.getFiles("Choices"):
+            with open(CharIO.DATA_PATH + "Choices" + CharIO.PATH_SEPERATOR + file) as f:
+                name = file.split(".")[0]
+                f = [file.rstrip() for file in f.readlines()]
+                choices[name] = Choice.parseChoice(name, f, features)
+        return choices
 
-def getWeapons() -> dict[str, Weapon]:
-    weapons = {}
-    with open(DATA_PATH+"Tables/Weapons.data") as f:
-        for line in f.readlines():
-            wType, diceString, modType = line.rstrip().split(" ")
-            weapons[wType] = Weapon(wType, Dice.parseDice(diceString), AttributeType(modType))
-    return weapons
+    def getFeats(actions: dict[str, Action], features: dict[str, Feature], choice: dict[str, Choice]) -> dict[str, Feat]:
+        feats = {}
+        for fileName in CharIO.getFiles("Feats"):
+            with open(CharIO.DATA_PATH + "Feats" + CharIO.PATH_SEPERATOR + fileName) as file:
+                name = fileName.split(".")[0]
+                lines = [file.rstrip() for file in file.readlines()]
+                feats[name] = Feat(name, lines, actions, features, choice)
+        return feats
 
-def getActions() -> dict[str, Action]:
-    readTables()
-    Action.initStaticData()
-    actions = {}
-    for file in getFiles("Actions"):
-        with open(DATA_PATH+"Actions/"+file) as f:
-            name = file.split(".")[0]
-            f = [file.rstrip() for file in f.readlines()]
-            (resource, addStrToDamage, requirements, damageDieOverride) = Action.parseAction(f)
-            actions[name] = Action(name, resource, addStrToDamage, requirements, damageDieOverride)
-    return actions
+    def getClasses(features: dict[str, Feature], choices: dict[str, Choice]) -> dict[str, Class]:
+        classes = {}
+        for fileName in CharIO.getFiles("Classes"):
+            with open(CharIO.DATA_PATH + "Classes" + CharIO.PATH_SEPERATOR + fileName) as file:
+                name = fileName.split(".")[0]
+                lines = [file.rstrip() for file in file.readlines()]
+                classes[name] = Class(name, lines, features, choices)
+        return classes
 
-def getBonusDamageSources():
-    bonusDamage = {}
-    for file in getFiles("BonusDamageSources"):
-        with open(DATA_PATH+"BonusDamageSources/"+file) as f:
-            name = file.split(".")[0]
-            lines = [file.rstrip() for file in f.readlines()]
-            bonusDamage[name] = BonusDamage.parseBonusDamage(lines, name)
-    return bonusDamage
+    def saveBuild(buildInfo: str, fileName: str):
+        try:
+            with open(CharIO.PARENT_PATH + "Saved Builds" + CharIO.PATH_SEPERATOR + fileName + ".txt", "w") as outFile:
+                outFile.write(buildInfo)
+        except:
+            print("Failed saving...")
 
-def getChoices(features: dict[str, Feature]) -> dict[str, Choice]:
-    choices = {}
-    for file in getFiles("Choices"):
-        with open(DATA_PATH+"Choices/"+file) as f:
-            name = file.split(".")[0]
-            f = [file.rstrip() for file in f.readlines()]
-            choices[name] = Choice.parseChoice(name, f, features)
-    return choices
+    settingsConv = {
+        "onlyGoodStats" : 0,
+        0 : lambda value: value == "True",
+        "maxCharacters" : 1,
+        1 : lambda value: int(value),
+        "cleanseEvery" : 2,
+        2 : lambda value: int(value),
+        "levelToReach" : 3,
+        3 : lambda value: int(value),
+        "keepOnlyUnique" : 4,
+        4 : lambda value: value == "True",
+        "multiProcessing" : 5,
+        5 : lambda value: value == "True"
+        }
 
-def getFeats(actions: dict[str, Action], features: dict[str, Feature], choice: dict[str, Choice]) -> dict[str, Feat]:
-    feats = {}
-    for fileName in getFiles("Feats"):
-        with open(DATA_PATH+"Feats/"+fileName) as file:
-            name = fileName.split(".")[0]
-            lines = [file.rstrip() for file in file.readlines()]
-            feats[name] = Feat(name, lines, actions, features, choice)
-    return feats
-
-def getClasses(features: dict[str, Feature], choices: dict[str, Choice]) -> dict[str, Class]:
-    classes = {}
-    for fileName in getFiles("Classes"):
-        with open(DATA_PATH+"Classes/"+fileName) as file:
-            name = fileName.split(".")[0]
-            lines = [file.rstrip() for file in file.readlines()]
-            classes[name] = Class(name, lines, features, choices)
-    return classes
-
-def saveBuild(buildInfo: str, fileName: str):
-    try:
-        with open("./Saved Builds/"+fileName+".txt", "w") as outFile:
-            outFile.write(buildInfo)
-    except:
-        print("Failed saving...")
-
-settingsConv = {
-    "onlyGoodStats" : 0,
-    0 : lambda value: value == "True",
-    "maxCharacters" : 1,
-    1 : lambda value: int(value),
-    "cleanseEvery" : 2,
-    2 : lambda value: int(value),
-    "levelToReach" : 3,
-    3 : lambda value: int(value),
-    "keepOnlyUnique" : 4,
-    4 : lambda value: value == "True",
-    "multiProcessing" : 5,
-    5 : lambda value: value == "True"
-    }
-
-def getSettings():
-    args = None
-    with open("Settings.txt") as file:
-        lines = file.readlines()
-        args = [None for i in range(len(lines))]
-        for line in lines:
-            name, value = line.rstrip().split(" = ")
-            position = settingsConv[name]
-            args[position] = settingsConv[position](value)
-    return args
+    def getSettings():
+        args = None
+        with open("Settings.txt") as file:
+            lines = file.readlines()
+            args = [None for i in range(len(lines))]
+            for line in lines:
+                name, value = line.rstrip().split(" = ")
+                position = CharIO.settingsConv[name]
+                args[position] = CharIO.settingsConv[position](value)
+        return args
 
 if __name__ == "__main__":
+    print("isMain")
+
     def printDict(dictionary: dict):
         for key in dictionary.keys():
             print(dictionary[key])
-    getSettings()
-    actions = getActions()
+    CharIO.getSettings()
+    actions = CharIO.getActions()
     printDict(actions)
     print("\n")
 
-    bonusDamage = getBonusDamageSources()
+    bonusDamage = CharIO.getBonusDamageSources()
     printDict(bonusDamage)
     print("\n")
 
-    features = getFeatures(actions, bonusDamage)
+    features = CharIO.getFeatures(actions, bonusDamage)
     printDict(features)
     print("\n")
 
-    races = getRaces(features)
+    races = CharIO.getRaces(features)
     printDict(races)
     print("\n")
 
-    weapons = getWeapons()
+    weapons = CharIO.getWeapons()
     printDict(weapons)
     print("\n")
 
-    choices = getChoices(features)
+    choices = CharIO.getChoices(features)
     printDict(choices)
     print("\n")
 
-    feats = getFeats(actions, features, choices)
+    feats = CharIO.getFeats(actions, features, choices)
     printDict(feats)
     print("\n")
 
-    classes = getClasses(features, choices)
+    classes = CharIO.getClasses(features, choices)
     printDict(classes)
     print("\n")
 

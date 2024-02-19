@@ -1,5 +1,7 @@
 from pyFiles.Analysis import analyzeClasses
 from pyFiles.Creator import createCharacter
+from pyFiles.OperatingEnum import getSystem
+from pyFiles.CharIO import CharIO
 
 def printHelp():
     print("You can type:\n"\
@@ -9,9 +11,9 @@ def printHelp():
           + "  Stop / Exit - Either closes the program\n")
 
 if __name__ == "__main__":
-    createCharacter()
-
-    assert False
+    system = getSystem()
+    print("Running ", system.name)
+    CharIO.setSystem(system)
 
     keepGoing = True
     while(keepGoing):

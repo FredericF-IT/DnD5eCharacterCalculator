@@ -1,7 +1,6 @@
 from math import floor
-from itertools import permutations
 from multiprocessing import cpu_count
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ProcessPoolExecutor, Future
 
 from .Feats import Feat
 from .Weapons import Weapon
@@ -11,12 +10,17 @@ from .Classes import Class
 from .Attributes import Attributes, AttributeType, Usefullness, positions
 from .Actions import Action
 
-skillCost = lambda score: score-8 + max(score - 13, 0) # The cost is 0 at 8, and increases by 1 until a score of 13. At 14 and 15 the increase goes to 2. You cannot chose a score higher then 15 in pointbuy.
+def skillCost(score: int): 
+    return score-8 + max(score - 13, 0) 
+    # The cost is 0 at 8, and increases by 1 until a score of 13. At 14 and 15 the increase goes to 2. 
+    # You cannot chose a score higher then 15 in pointbuy.
 
-scoreBuyableWithPoints = lambda points: 8 + min(points, 5) + min(floor(max(points - 5, 0)/2), 2)# How high can i make a score with x points? 
-                                                                                         # 8 - 13 with 0 - 5 points
-                                                                                         # 14 or 15 with 7 or 9 points
-                                                                                         # As max is 15, there can be points left over if the calculated score is bought
+def scoreBuyableWithPoints(points: int):
+    return 8 + min(points, 5) + min(floor(max(points - 5, 0)/2), 2)
+        # How high can i make a score with x points? 
+            # 8 - 13 with 0 - 5 points
+            # 14 or 15 with 7 or 9 points
+            # As max is 15, there can be points left over if the calculated score is bought
 
 class CombinationExplorer:
     def __init__(self, feats: list[Feat], weapons: list[Weapon], races: list[Race], classes: list[Class]) -> None:
@@ -25,13 +29,13 @@ class CombinationExplorer:
         self.races = races
         self.classes = classes
 
-    def putStatAtPosition(score: int, stat: AttributeType, scoreList: list[int]):
+    def putStatAtPosition(score: int, stat: AttributeType, scoreList: list[int]) -> list[int]:
         scoreList[positions[stat]] = score
         return scoreList
     
     
-    def getGoodStatCombinations(goodStats: list[AttributeType], pointsLeft: int, stats: list[int]): # try different combinations
-        statCombinations = []
+    def getGoodStatCombinations(goodStats: list[AttributeType], pointsLeft: int, stats: list[int]) -> list[tuple[int, list[int]]]: # try different combinations
+        statCombinations = list[tuple[int, list[int]]]()
         for goodStat in goodStats:
             maxInOneScore = scoreBuyableWithPoints(pointsLeft)
             for i in range(max(floor(maxInOneScore / len(goodStats))-3, 8), maxInOneScore+1):
@@ -47,14 +51,14 @@ class CombinationExplorer:
     
     seenBefore = dict[(int, list[int]), bool]()
 
-    def getOkayStatCombinations(okayStats: list[AttributeType], pointsLeft: int, stats: list[int]):
+    def getOkayStatCombinations(okayStats: list[AttributeType], pointsLeft: int, stats: list[int]) -> list[list[int]]:
         if(len(okayStats) == 0):
             if(not CombinationExplorer.seenBefore.get(tuple(stats), False)):
                 CombinationExplorer.seenBefore[tuple(stats)] = True
                 #assert pointsLeft == 0
                 return [stats]
             return []
-        statCombinations = []
+        statCombinations = list[list[int]]()
         for okayStat in okayStats:
             copyOfStats = [*okayStats]
             copyOfStats.remove(okayStat)
@@ -72,21 +76,21 @@ class CombinationExplorer:
         attributes = dict[Class, Attributes]()
         for startingClass in self.classes:
             usefullness = startingClass.statUsefullness
-            importance = usefullness.values()
+            importance = list(usefullness.values())
             keys = list(usefullness.keys())
 
-            statCombinations = []
+            statCombinations = list[tuple[int, list[int]]]() # List of (pointsLeft(=int), Stats(=int[6]))
             
             if(Usefullness.Main in importance): #should start with this high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
-                mainStat = keys[list(importance).index(Usefullness.Main)]
+                mainStat = keys[importance.index(Usefullness.Main)]
 
                 for i in range (14, 16):
                     pointsLeft = 27 - skillCost(i)
                     statCombinations.append((pointsLeft, CombinationExplorer.putStatAtPosition(i, mainStat, [8,8,8,8,8,8])))
 
             elif(Usefullness.Both in importance): #should start with both high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
-                stat1Index = list(importance).index(Usefullness.Both)
-                stat2Index = list(importance).index(Usefullness.Both, stat1Index+1)
+                stat1Index = importance.index(Usefullness.Both)
+                stat2Index = importance.index(Usefullness.Both, stat1Index+1)
                 mainStats1 = keys[stat1Index]
                 mainStats2 = keys[stat2Index]
 
@@ -99,8 +103,8 @@ class CombinationExplorer:
                         statCombinations.append((pointsLeftB, stats))
 
             elif(Usefullness.Either in importance): #should start with one as high as possible, although we might not always want to start with an odd number when we could have increased the second best stat
-                stat1Index = list(importance).index(Usefullness.Either)
-                stat2Index = list(importance).index(Usefullness.Either, stat1Index+1)
+                stat1Index = importance.index(Usefullness.Either)
+                stat2Index = importance.index(Usefullness.Either, stat1Index+1)
                 possibleStats1 = keys[stat1Index]
                 possibleStats2 = keys[stat2Index]
                 for i in range (14, 16):
@@ -111,15 +115,15 @@ class CombinationExplorer:
                     pointsLeft = 27 - skillCost(i)
                     statCombinations.append((pointsLeft, CombinationExplorer.putStatAtPosition(i, possibleStats2, [8,8,8,8,8,8])))
 
-            statCombinationsV2 = []
+            statCombinationsV2 = list[tuple[int, list[int]]]()
             for statCombination in statCombinations:
                 if(Usefullness.Good in importance):
                     pointsLeft = statCombination[0]
-                    goodStatsLeft = list(importance).count(Usefullness.Good)
+                    goodStatsLeft = importance.count(Usefullness.Good)
                     goodStats = []
                     lastIndex = 0
                     for i in range(goodStatsLeft):
-                        lastIndex = list(importance).index(Usefullness.Good, lastIndex)
+                        lastIndex = importance.index(Usefullness.Good, lastIndex)
                         goodStats.append(keys[lastIndex])
                         lastIndex += 1
                     statCombinationsV2.extend(CombinationExplorer.getGoodStatCombinations(goodStats, pointsLeft, statCombination[1]))
@@ -127,21 +131,22 @@ class CombinationExplorer:
                     statCombinationsV2.extend(statCombination)
 
             if not(onlyGoodStats):
-                statCombinationsV3 = []
+                statCombinationsV3 = list[list[int]]()
                 for statCombination in statCombinationsV2:
                     if(Usefullness.Okay in importance): # Any stat that is not a dump stat can now get some points
                         pointsLeft = statCombination[0]
-                        goodStatsLeft = list(importance).count(Usefullness.Okay)
+                        goodStatsLeft = importance.count(Usefullness.Okay)
                         goodStats = []
                         lastIndex = 0
                         for i in range(goodStatsLeft):
-                            lastIndex = list(importance).index(Usefullness.Okay, lastIndex)
+                            lastIndex = importance.index(Usefullness.Okay, lastIndex)
                             goodStats.append(keys[lastIndex])
                             lastIndex += 1
                             
                         statCombinationsV3.extend(CombinationExplorer.getOkayStatCombinations(goodStats, pointsLeft, statCombination[1]))
                     else:
-                        statCombinationsV3.append(statCombination)
+                        statCombinationsV3.append(statCombination[1])
+                        print("happened")
 
                 for i in range(6):
                     statCombinationsV3 = sorted(statCombinationsV3, key=lambda tup: tup[5-i])
@@ -152,19 +157,17 @@ class CombinationExplorer:
         return attributes
     
     #seenvariations = dict[(list[AttributeType], int, int), list[list[int]]]()
-    0, 2, 3
 
-    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> set[tuple[int]]: #Usually: cant pick same score twice if yTimes > 1
+    def getPossibleCombinations(possibleScores: list[AttributeType], getPlusX: int, yTimes: int) -> list[list[int]]: #Usually: cant pick same score twice if yTimes > 1
         positionList = []#[0,0,0,0,0,0]
         for score in possibleScores: # get all places a bonus could be
             positionList.append(positions[score])
-        statPossible = []
+        statPossible = list[list[int]]()
         for position in positionList:
             newVariation = [0,0,0,0,0,0]
             newVariation[position] = getPlusX
             statPossible.append(newVariation)
         for times in range(0, yTimes-1):
-            assert yTimes > 1
             statCopy = [*statPossible]
             statPossible.clear()
             for variation in statCopy:
@@ -179,7 +182,7 @@ class CombinationExplorer:
                 assert foundPlace # no place found to allocate
         statPossibleUnique = set([tuple(stat) for stat in statPossible])
         statPossible = [list(stat) for stat in statPossibleUnique]
-        assert len(statPossible) > 0
+        #assert len(statPossible) > 0
         return statPossible
 
     def findPointDistribution(usefullness: list[AttributeType], usefullStats: set[AttributeType], reversedUsefullness, exceptForIn: set[int], getPlusX: int, yTimes: int, character: Character) -> list[Character]:
@@ -211,7 +214,7 @@ class CombinationExplorer:
             newCharacters.append(newCharacter)
         return newCharacters
 
-    def goodASIAssignment(usefullStats: list[AttributeType], exceptForIn: set[int], character: Character) -> list[Character]:
+    def goodASIAssignment(usefullStats: set[AttributeType], exceptForIn: set[int], character: Character) -> list[Character]:
         possibleImprovements = []
         for stat in usefullStats.difference(exceptForIn):
             scoreLeft = 20 - character.attr.getStat(stat)
@@ -317,7 +320,7 @@ class Test:
         return charactersSubset
 
     def upgradeCharacterLevel(classes: list[Class], feats: list[Feat], characters: list[Character]) -> list[Character]:
-        processes = []
+        processes = list[Future]()
         executor = ProcessPoolExecutor(max_workers=cpuCores)
 
         oldLength = len(characters)
@@ -346,8 +349,9 @@ class Test:
                 continue
             character.increaseClass(aClass)
 
-            tempCharacters = []
-            tempBaseCharacters = Test.doChoice(character) # choice from the class specifically
+            tempCharacters = list[Character]()
+            tempBaseCharacters = list[Character]()
+            tempBaseCharacters.extend(Test.doChoice(character)) # choice from the class specifically
 
             for character in tempBaseCharacters:
                 if not (character.classes.subClassChoice == ""):

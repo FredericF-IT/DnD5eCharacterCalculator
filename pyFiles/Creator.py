@@ -1,19 +1,10 @@
 import tkinter as tk
 from typing import Any, Callable
 
-from .CharIO import getFeatures, getRaces, getWeapons, getActions, getFeats, getChoices, getClasses, saveBuild, getBonusDamageSources
+from .CharIO import CharIO
 from .CharSheet import Character
 from .Attributes import positions, AttributeType
 from .Mitosis import skillCost, scoreBuyableWithPoints
-
-actions = getActions()
-bonusDamage = getBonusDamageSources()
-features = getFeatures(actions, bonusDamage)
-races = getRaces(features)
-weapons = getWeapons()
-choices = getChoices(features)
-feats = getFeats(actions, features, choices)
-classes = getClasses(features, choices)
 
 class CharChoice:
     class Option:
@@ -171,7 +162,15 @@ def test():
 
 
 def createCharacter():
-    #test()
-    window = tk.Tk()
+    actions = CharIO.getActions()
+    bonusDamage = CharIO.getBonusDamageSources()
+    features = CharIO.getFeatures(actions, bonusDamage)
+    races = CharIO.getRaces(features)
+    weapons = CharIO.getWeapons()
+    choices = CharIO.getChoices(features)
+    feats = CharIO.getFeats(actions, features, choices)
+    classes = CharIO.getClasses(features, choices)
+    test()
+    #window = tk.Tk()
     
-    statsWindow = StatChoiceWindow("Stats", window)
+    #statsWindow = StatChoiceWindow("Stats", window)

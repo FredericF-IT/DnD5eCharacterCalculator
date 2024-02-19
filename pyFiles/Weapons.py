@@ -1,8 +1,8 @@
 from .Attributes import AttributeType
 
 class Dice:
-    def parseDice(string: str) -> list[(int, int)]:
-        weaponDice = []
+    def parseDice(string: str) -> list[tuple[int, int]]:
+        weaponDice = list[tuple[int, int]]()
         for d in string.split("|"): # For magic weapons, as some have more then one dice type, f.e.: The Flame Tounge Longsword does 1d8 slashing and 2d6 fire damage. 
             numDice, diceFace = d.split("d")
             weaponDice.append((int(numDice), int(diceFace)))
@@ -16,20 +16,20 @@ class Dice:
         rerollExtra = (dieFace - 2) / dieFace
         return (normalDamage + rerollExtra)*dieCount
     
-    def averageValueForDice(dice: list[(int, int)]):
+    def averageValueForDice(dice: list[tuple[int, int]]):
         averageDamage = 0
         for (dieCount, dieFace) in dice:
             averageDamage += Dice.averageDamageForDie(dieFace, dieCount)
         return averageDamage
     
-    def averageValueForDiceWithRerolls(dice: list[(int, int)]):
+    def averageValueForDiceWithRerolls(dice: list[tuple[int, int]]):
         averageDamage = 0
         for (dieCount, dieFace) in dice:
             averageDamage += Dice.averageDamageForDieWithRerolls(dieFace, dieCount)
         return averageDamage
 
 class Weapon:
-    def __init__(self, wType: str, damageDice: [(int, int)], usedMod: AttributeType) -> None:
+    def __init__(self, wType: str, damageDice: list[tuple[int, int]], usedMod: AttributeType) -> None:
         self.wType = wType
         self.damageDice = damageDice
         self.averageHitDamage = (Dice.averageValueForDice(damageDice), Dice.averageValueForDiceWithRerolls(damageDice))
@@ -37,8 +37,8 @@ class Weapon:
         self.averageHitDamageOneDie = (Dice.averageValueForDice(diceOnlyOne), Dice.averageValueForDiceWithRerolls(diceOnlyOne)) # Crit bonuses only apply to one damage die, meaning a crit with +1 crit dice on a 2d6 sword does 5d6, not 6d6.
         self.usedMod = usedMod
     
-    def caclulateHitChances() -> dict[(int, bool, int), float]:
-        hitChanceBook = {}
+    def caclulateHitChances() -> dict[tuple[int, bool, int], float]:
+        hitChanceBook = dict[tuple[int, bool, int], float]()
         for diffAcToHit in range(-11, 31):
             for critRange in range(18, 21):
                 chance = min(max(21-diffAcToHit, 21-critRange), 19)/20
@@ -55,8 +55,8 @@ class Weapon:
                 hitChanceBook[(diffAcToHit, True, critRange)] = round(chance * (2 - chance), 6)
         return hitChanceBook
 
-    def caclulateCritChances() -> dict[(int, bool), float]:
-        critChanceBook = {}
+    def caclulateCritChances() -> dict[tuple[int, bool], float]:
+        critChanceBook = dict[tuple[int, bool], float]()
         for critRangeStarts in range(18, 21):
             chance = 1-(critRangeStarts-1)/20
             critChanceBook[(critRangeStarts, False)] = round(chance, 6)
