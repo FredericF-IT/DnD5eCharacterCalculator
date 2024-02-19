@@ -1,9 +1,7 @@
 from enum import Enum
 
 from .Weapons import Dice, Weapon
-from .Converter import Converter
 from .Requirements import Requirement, Requireable
-from .CharSheet import Character
 from .BonusDamage import BonusType
 
 class ActionType(Enum):
@@ -14,11 +12,11 @@ def printIf(condition: bool, *text: str):
     if condition: print(*text)
 
 class Action(Requireable):
-    hitChanceBook = dict[(int, bool, int), float]()
-    critChanceBook = dict[(int, bool), float]()
+    hitChanceBook: dict[(int, bool, int), float]
+    critChanceBook: dict[(int, bool), float]
 
     useActionDice = False
-    def __init__(self, name: str, resource: ActionType, modToDamage: bool, requirements: list[Requirement], baseWeaponOverride : list[(int, int)]) -> None:
+    def __init__(self, name: str, resource: ActionType, modToDamage: bool, requirements: list[Requirement], baseWeaponOverride : list[tuple[int, int]]) -> None:
         self.name = name
         self.resource = resource
         self.modToDamage = modToDamage
@@ -34,6 +32,7 @@ class Action(Requireable):
         Action.critChanceBook = Weapon.caclulateCritChances()
 
     def parseAction(lines: list[str]) -> tuple[ActionType, bool, list[Requirement], int]:
+        from .Converter import Converter
         i = 1
         requirements = []
         modToDamage = None # Should always be set, if not there: Error
@@ -50,7 +49,9 @@ class Action(Requireable):
                 modToDamage = lineParts[1] == "True"
         return (ActionType(lines[0]), modToDamage, requirements, damageDieOverride)
 
-    def executeAttack(self, character: Character, enemyAC: int, doPrint:bool=False):
+    def executeAttack(self, character, enemyAC: int, doPrint:bool=False): # Character will not be typed unless needed, as circular import occurs. For testing, uncomment:
+        from .CharSheet import Character
+        assert type(character) == Character
         isAttack = self.name == "Attack"
         battleStats = character.battleStats
         attr = character.attr

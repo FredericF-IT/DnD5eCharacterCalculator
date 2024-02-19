@@ -4,16 +4,17 @@ from .Features import Feature, Value
 from .Races import Race
 from .BattleStats import BattleStats
 from .Classes import Class, ClassList
+from .Actions import Action
 
 class Character:
-    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set, startingClass: Class, isEmpty:bool=False) -> None:
+    def __init__(self, attr: Attributes, race: Race, weapon: Weapon, actions: set[Action], startingClass: Class, isEmpty:bool=False) -> None:
         if(isEmpty):
             return
         self.attr = attr
         self.attr.setCharacter(self)
         self.asiHistory = ""
-        self.damageHistory = []
-        self.gottenFeatures = []
+        self.damageHistory = list[float]()
+        self.gottenFeatures = list[str]()
         self.battleStats = BattleStats(weapon)
         self.race = race
         self.actions = actions
@@ -24,7 +25,7 @@ class Character:
         if not (self.attr.choices == ""):
             self.attr.calculateChoices() # character has applied his feautures now, so we always know if they have some first level stat choice.
 
-    def makeCharacter(attr: Attributes, battleStats: BattleStats, race: Race, actions: set, classes: ClassList, gottenFeatures: list[Feature], damageHistory: list[int], asiHistory: str):
+    def makeCharacter(attr: Attributes, battleStats: BattleStats, race: Race, actions: set[Action], classes: ClassList, gottenFeatures: list[str], damageHistory: list[float], asiHistory: str) -> 'Character':
         newChar = Character(None, None, None, None, None, True)
         newChar.attr = attr
         newChar.attr.setCharacter(newChar)

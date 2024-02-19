@@ -1,5 +1,7 @@
 from .Attributes import AttributeType
 from .Weapons import Dice
+from .Actions import Action
+from .BonusDamage import BonusDamage
 
 class Table:
     def __init__(self, entryPerLevel: list, ownerClass: str, dataType: str, tableName: str) -> None:
@@ -39,12 +41,16 @@ class Converter:
         dataType, data = data[:-1].split("[")
         Converter.tableData[tableName] = Table([Converter.convert(dataType, value) for value in data.split(", ")], tableOwner, dataType, tableName)
 
-    def parsePaths(lines: list[str], actionDict: dict, bonusDamageDict: dict) -> tuple[list[(str, 'Value')], list[(str, list['Value'])], list[(str, list[str])]]:
-        varChanges = []
-        methodCalls = []
-        subFeatures = []
-        actions = []
-        bonusDamage = []
+    def parsePaths(lines: list[str], actionDict: dict, bonusDamageDict: dict) -> tuple[list[tuple[str, 'Value']], 
+                                                                                       list[tuple[str, list['Value']]], 
+                                                                                       list[tuple[str, list[str]]],
+                                                                                       list[Action],
+                                                                                       list[BonusDamage]]:
+        varChanges = list[tuple[str, Value]]()
+        methodCalls = list[tuple[str, list[Value]]]()
+        subFeatures = list[tuple[str, list[str]]]()
+        actions = list[Action]()
+        bonusDamage = list[BonusDamage]()
         
         def getArgumentValues(values: str) -> list[Value]:
             if(values == ""): return []

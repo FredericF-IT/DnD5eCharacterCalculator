@@ -26,31 +26,32 @@ class Usefullness(Enum):
     Okay = 4 # Improve if no better available
     Dump = 5 # Start and keep at this at a score of 8 with a mod of -1
 
-
 class Attributes:
 
-    def makeDict(keys: list, values: list) -> dict[AttributeType, int]:
-        dictionary = {}
+    def makeAttrDict(keys: list, values: list) -> dict[AttributeType, int]:
+        dictionary = dict[AttributeType, int]()
         for i, key in enumerate(keys):
             dictionary[key] = values[i]
         return dictionary
 
-    character = None
+    baseStats: dict[AttributeType, int]
+    boni: dict[AttributeType, int]
 
     def __init__(self, baseStats: list[int], choices:str="", getX:int=0, inY:int=0, unchoosable=set[AttributeType](), hasStartingChoice:bool=False, boni=None) -> None:
         self.choices = choices
         self.ASIAvailable = False
-        self.baseStats = Attributes.makeDict(AttributeType, baseStats)
+        self.baseStats = Attributes.makeAttrDict(AttributeType, baseStats)
         if boni == None:
-            self.boni = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
+            self.boni = Attributes.makeAttrDict(AttributeType, [0, 0, 0, 0, 0, 0])
         else:
             self.boni = boni
-        self.mod = Attributes.makeDict(AttributeType, [0, 0, 0, 0, 0, 0])
+        self.mod = Attributes.makeAttrDict(AttributeType, [0, 0, 0, 0, 0, 0])
         self.hasStartingChoice = hasStartingChoice
         self.unchoosable = unchoosable
         self.getX, self.inY = getX, inY
         for statName in AttributeType:
             self.calcModifier(statName)
+        self.character = None
 
     def calcModifier(self, stat: AttributeType):
         self.mod[stat] = floor((self.getStat(stat)-10)/2) # Modifier is 0 at score of 10, increases / decreases per +2 / -2
@@ -73,11 +74,13 @@ class Attributes:
             historyBuffer += self.ASI(statName, stats[statName])
         self.character.asiHistory += historyBuffer+")\n"
 
-    def setCharacter(self, character):
+    def setCharacter(self, character): # Character will not be typed unless needed, as circular import occurs. For testing, uncomment:
+        from .CharSheet import Character
+        assert type(character) == Character
         self.character = character
 
     def addStatBonusList(self, stats: list[int]):
-        self.addStatBonus(Attributes.makeDict(AttributeType, stats))
+        self.addStatBonus(Attributes.makeAttrDict(AttributeType, stats))
 
     def calculateChoices(self):
         choice = self.choices

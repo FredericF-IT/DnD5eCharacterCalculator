@@ -1,8 +1,9 @@
 from enum import Enum
 from time import time
 from math import ceil, floor
-import matplotlib.pyplot as plt
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 import tkinter as tk
 
 from .Mitosis import CombinationExplorer, Test
@@ -33,7 +34,7 @@ if(cleanseEvery < 1):
 
 expectedAC = [13, 13, 13, 14, 15, 15, 15, 16, 16, 17, 17, 17, 18, 18, 18, 18, 19, 19, 19, 19]
 
-levelLists = [list[(int, (Character, Action, Action))]() for i in range(0, 20)] # First value is damage, the actions are the best action / bonus action available that resulted in that rounds damage.
+levelLists = [list[tuple[int, tuple[Class, Character, Action, Action]]]() for i in range(0, 20)] # First value is damage, the actions are the best action / bonus action available that resulted in that rounds damage.
 
 #displayList = list[(int, (Character, Action, Action))]()
 
@@ -49,7 +50,7 @@ class characterSelection(Enum):
 #    elif (mode == characterSelection.BestOverall):
 #        displayList = [*levelLists[level-1]]    # TODO
 
-def rankBuilds(characters: list[Character], targetList: list[(int, Character)], classes: dict[str, Class]):
+def rankBuilds(characters: list[Character], targetList: list[tuple[int, tuple[Class, Character, Action, Action]]], classes: dict[str, Class]) -> list[Character]:
     level = characters[0].classes.charLevel
     isLastLevel = level == levelToReach
     needsCleanse = isLastLevel or (not (maxCharacters == None) and level > 1 and level % cleanseEvery == 0)
@@ -88,8 +89,8 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)], 
     
     targetList.sort(key=lambda entry: entry[0], reverse=True)
     
-    characters = []
-    keepEntries = []
+    characters = list[Character]()
+    keepEntries = list[tuple[int, tuple[Class, Character, Action, Action]]]()
     for aClass in classes.values():
         charactersLeft = maxCharacters
         haveSeenDamage = {}
@@ -117,6 +118,8 @@ def rankBuilds(characters: list[Character], targetList: list[(int, Character)], 
 def getBestPerClass(level: int, classes: list[Class]) -> list[(list[list[int]], list[list[int]])]:
     #global displayList
     perClassData = []
+    top5Different: list[tuple[float, Character]]
+
     for aClass in classes:
         top5Different = [(0, None)]
         actionUses = []
@@ -188,14 +191,19 @@ def showDifferentResults(listIndex: int, classes: dict[str, Class], mode : chara
     def savePlotImage(canvas: list[FigureCanvasTkAgg]):
         imageName = input("Give a name fo the file: ")
         canvas[0].get_tk_widget().postscript(file=CharIO.PARENT_PATH+"Saved Builds/"+imageName+".eps")
-
+    
+    canvas: list[FigureCanvasTkAgg]
     canvas = [None]
-    toolbar = [None]
+    
+    figure: list[Figure]
     figure = [None]
+    
+    toolbar: list[NavigationToolbar2Tk]
+    toolbar = [None]
 
-    def plotBuilds(perClassData: list[list[list[int]]], classIndex: int, currentIndex: int, canvas: list[FigureCanvasTkAgg], toolbar: list[NavigationToolbar2Tk], fig: list[plt.Figure]): # Based on https://www.geeksforgeeks.org/how-to-embed-matplotlib-charts-in-tkinter-gui/
+    def plotBuilds(perClassData: list[list[list[int]]], classIndex: int, currentIndex: int, canvas: list[FigureCanvasTkAgg], toolbar: list[NavigationToolbar2Tk], fig: list[Figure]): # Based on https://www.geeksforgeeks.org/how-to-embed-matplotlib-charts-in-tkinter-gui/
             if(fig[0] == None):
-                fig[0] = plt.Figure(figsize = (6, 6), dpi = 100) 
+                fig[0] = Figure(figsize = (6, 6), dpi = 100) 
             else:
                 fig[0].clear()
             damagePlot = fig[0].add_subplot(111) 
@@ -263,11 +271,11 @@ def timePretty(seconds: int) -> str:
     hours = floor(minutes / 60)
     return str(hours).zfill(2)+"h"+str(minutesReal).zfill(2)+"m"+str(secondsReal).zfill(2)+"s"
 
-def getDamageString(entry):
-    character = entry[1]
-    extraAttack = character[2].name == "Attack"
-    return str(round(entry[0], 6)) + " damage using:\n" + character[2].name + (" x"+str(character[1].battleStats.attacksPerAction) if extraAttack else "") + \
-        (" and "+character[3].name if not character[3] == None else "")
+def getDamageString(entry: tuple[int, tuple[Class, Character, Action, Action]]):
+    data = entry[1]
+    extraAttack = data[2].name == "Attack"
+    return str(round(entry[0], 6)) + " damage using:\n" + data[2].name + (" x"+str(data[1].battleStats.attacksPerAction) if extraAttack else "") + \
+        (" and "+data[3].name if not data[3] == None else "")
 
 def printLevelResults(listIndex: int, characters: list[Character]):  
     print("Top 10 at Level "+str(listIndex+1)+":")   

@@ -63,12 +63,6 @@ class BattleStats:
                 "Crit range: " + str(self.critRange) + " Crit dice: " + str(self.extraCritDice) + "\n"+\
                 "To Hit bonus: " + str(self.flatToHitBonus) + "\n"
     
-    # Dice can also easily removed by using a negative number oof dice.
-    # This is usefull for upgrading features, as you may have an increase from 2d6 to 2d8 etc.
-    #def addExtraDamageDie(self, dice: list[(int, int)]):
-    #    for numOfDice, diceFace in dice:
-    #        self.extraDamageDice[diceFace] = self.extraDamageDice.get(diceFace, 0) + numOfDice
-
     def __eq__(self, __value: object) -> bool:
         if not isinstance(__value, BattleStats):
             return NotImplemented
@@ -76,7 +70,6 @@ class BattleStats:
                 self.extraCritDice == __value.extraCritDice and \
                 self.critRange == __value.critRange and \
                 self.firstLevelFeat == __value.firstLevelFeat and \
-                self.profBonus == __value.profBonus and \
                 self.flatToHitBonus == __value.flatToHitBonus and \
                 self.weapon == __value.weapon and \
                 self.getsAdvantage == __value.getsAdvantage and \

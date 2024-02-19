@@ -2,9 +2,10 @@ from copy import deepcopy
 
 from .Converter import Value
 from .BonusDamage import BonusDamage
+from .Actions import Action 
 
 class Feature:
-    def __init__(self, name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list['Feature'], actions: list, bonusDamage: list[BonusDamage]) -> None:
+    def __init__(self, name: str, varChanges: list[tuple[str, Value]], methodCalls: list[tuple[str, list[Value]]], subFeatures: list['Feature'], actions: list[Action], bonusDamage: list[BonusDamage]) -> None:
         self.name = name
         self.varChanges = varChanges
         self.methodCalls = methodCalls
@@ -34,8 +35,8 @@ class Feature:
 
     # Feature can not fill in holes of own values, the only missing values are in subfeatures.
     # Not all created features are "finished" at runtime, as they may only appear as filled in subfeatures that are never used on their own. 
-    def createFeature(features: dict[str, 'Feature'], name: str, varChanges: list[(str, Value)], methodCalls: list[(str, list[Value])], subFeatures: list[(str, list[str])], actions: list, bonusDamage: list[str]) -> 'Feature':
-        filledSubFeatures = []
+    def createFeature(features: dict[str, 'Feature'], name: str, varChanges: list[tuple[str, Value]], methodCalls: list[tuple[str, list[Value]]], subFeatures: list[tuple[str, list[str]]], actions: list[Action], bonusDamage: list[BonusDamage]) -> 'Feature':
+        filledSubFeatures = list[Feature]()
         for subFeature in subFeatures:
             feature = features[subFeature[0]].getCopy()
             feature.fillInValues(subFeature[1])
@@ -55,7 +56,9 @@ class Feature:
 
         return True
 
-    def applyFeature(self, character):
+    def applyFeature(self, character): # Character will not be typed unless needed, as circular import occurs. For testing, uncomment:
+        from .CharSheet import Character
+        assert type(character) == Character
         for var in self.varChanges:
             value = var[1].getValue()
             if(isinstance(value, bool)):

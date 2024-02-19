@@ -6,7 +6,7 @@ from .Attributes import Usefullness, AttributeType
 from .Choices import Choice
 
 class SubClass:
-    def __init__(self, name, lines: list[str], features: dict[str, Feature], choices: dict[str, Choice]) -> None:
+    def __init__(self, name: str, lines: list[str], features: dict[str, Feature], choices: dict[str, Choice]) -> None:
         self.name = name
         self.featuresAtLevel = dict[int, list[Feature]]()
         self.choicesAtLevel = dict[int, list[Choice]]()
@@ -14,13 +14,13 @@ class SubClass:
             words = line.split(" ")
             #assert words[0] == "Lvl:"
             level = int(words[1][:-1])-1
-            (featureList, choiceList) = SubClass.parseClassFeatures(features, choices, words[1:])
+            featureList, choiceList = SubClass.parseClassFeatures(features, choices, words[1:])
             self.choicesAtLevel[level] = choiceList
             self.featuresAtLevel[level] = featureList
     
-    def parseClassFeatures(features: dict[str, Feature], choices: dict[str, Choice], words: list[str]):
-        featureList = []
-        choiceList = []
+    def parseClassFeatures(features: dict[str, Feature], choices: dict[str, Choice], words: list[str]) -> tuple[list[Feature], list[Choice]]:
+        featureList = list[Feature]()
+        choiceList = list[Choice]()
         featureNames = words[1].split("|")
         for featureName in featureNames:
             nameParts = featureName.split(">")
@@ -129,7 +129,7 @@ class Class(Requireable):
             reversedUsefullness[item[1]] = oldValue
         self.reversedUsefullness = reversedUsefullness
 
-    def getUsefulls(self) -> tuple[list[(AttributeType, Usefullness)], set[AttributeType], dict[Usefullness, list[AttributeType]]]:
+    def getUsefulls(self) -> tuple[list[tuple[AttributeType, Usefullness]], set[AttributeType], dict[Usefullness, list[AttributeType]]]:
         return (self.mostUsefull, self.mostUsefullAttrTypes, self.reversedUsefullness)
 
     def __str__(self) -> str:
@@ -139,17 +139,15 @@ class Class(Requireable):
             ("\nChoices:\n"+"\n".join(["    Level "+str(items[0]+1)+": "+", ".join([choice.name for choice in items[1]]) for items in self.choicesAtLevel.items()]) if len(self.choicesAtLevel.keys()) > 0 else "")
 
 class ClassList:
-    classesInOrderTaken = list[Class]()
-    levelOfClasses = dict[str, int]()
-    subclassesTaken = dict[str, str]()
-    subClassChoice = ""
-    choice = []
-    charLevel = 0
     def __init__(self, startingClass: Class, character, isEmpty:bool=False) -> None:
         if(isEmpty):
             return
-        self.levelOfClasses = {}
-        self.classesInOrderTaken = []
+        self.choice = list[Choice]()
+        self.levelOfClasses = dict[str, int]()
+        self.classesInOrderTaken = list[Class]()
+        self.subclassesTaken = dict[str, str]()
+        self.subClassChoice = ""
+        self.charLevel = 0
         self.increaseClass(startingClass, character)
 
     def levelUp(self):
@@ -163,7 +161,7 @@ class ClassList:
         self.levelOfClasses[newClassLevel.name] = level + 1
         subclass = self.subclassesTaken.get(newClassLevel.name, None)
         character.applyFeatures(newClassLevel.getFeaturesAtLevel(level, subclass))
-        self.choice = newClassLevel.getChoicesAtLevel(level, subclass)
+        self.choice.extend(newClassLevel.getChoicesAtLevel(level, subclass))
 
     def addChoice(self, choice: list[Choice]):
         self.choice.extend(choice)
@@ -181,8 +179,7 @@ class ClassList:
         copyList.subclassesTaken = self.subclassesTaken.copy()
         copyList.charLevel = self.charLevel
         copyList.profBonus = self.profBonus
-        if not (self.choice == None):
-            copyList.choice = [*self.choice]
+        copyList.choice = [*self.choice]
         copyList.subClassChoice = self.subClassChoice
         #assert copyList == self
         return copyList

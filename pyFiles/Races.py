@@ -18,7 +18,7 @@ class Race:
         subracesLeft = True
         while(subracesLeft):
             name = lines[i-1]
-            stats = Attributes.makeDict(AttributeType, [0,0,0,0,0,0])
+            stats = Attributes.makeAttrDict(AttributeType, [0,0,0,0,0,0])
             features = []
             if(len(lines) > i+1 and lines[i+1] == "Stats"):
                 i += 2

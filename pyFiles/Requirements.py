@@ -1,8 +1,6 @@
-from .Converter import Converter
-
-
 class Requirement:
     def __init__(self, varPath: str, operator: str, value: str, typeName: str) -> None:
+        from .Converter import Converter
         self.getInfoFromMethod = "(" in varPath
         (variable, methodCall, unused, unused, unused) = Converter.parsePaths([(varPath if self.getInfoFromMethod else varPath.replace("]", " ? ?]"))], None, None)
         if(self.getInfoFromMethod):

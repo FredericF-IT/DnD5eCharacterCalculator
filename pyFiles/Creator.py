@@ -43,7 +43,7 @@ class CharChoice:
             option.dropDown = None
 
 class ChoiceWindow:
-    def __init__(self, name, window: tk.Tk, choice: CharChoice = None, next: 'ChoiceWindow' = None, last: 'ChoiceWindow' = None): 
+    def __init__(self, name: str, window: tk.Tk, choice: CharChoice = None, next: 'ChoiceWindow' = None, last: 'ChoiceWindow' = None): 
         self.choice = choice
         self.name = name
         self.next = next
@@ -95,7 +95,7 @@ class ChoiceWindow:
     def getResult(self) -> list: ...
 
 class StatChoiceWindow(ChoiceWindow):
-    def __init__(self, name, window: tk.Tk, choice: CharChoice = None, next: ChoiceWindow = None, last: ChoiceWindow = None):
+    def __init__(self, name: str, window: tk.Tk, choice: CharChoice = None, next: ChoiceWindow = None, last: ChoiceWindow = None):
         self.total = [27]
         self.stats = [8 for i in range(0, 6)]
 

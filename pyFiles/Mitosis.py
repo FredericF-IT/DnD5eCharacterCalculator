@@ -9,6 +9,7 @@ from .CharSheet import Character
 from .Classes import Class
 from .Attributes import Attributes, AttributeType, Usefullness, positions
 from .Actions import Action
+from .Choices import Choice
 
 def skillCost(score: int): 
     return score-8 + max(score - 13, 0) 
@@ -146,7 +147,6 @@ class CombinationExplorer:
                         statCombinationsV3.extend(CombinationExplorer.getOkayStatCombinations(goodStats, pointsLeft, statCombination[1]))
                     else:
                         statCombinationsV3.append(statCombination[1])
-                        print("happened")
 
                 for i in range(6):
                     statCombinationsV3 = sorted(statCombinationsV3, key=lambda tup: tup[5-i])
@@ -265,19 +265,29 @@ class CombinationExplorer:
                         actionsIfWeapon.append(actions["TwoWeaponFighting"])
                     for stats in attributes[aClass]:
                         newCharacter = Character(stats.getCopy(), race, weapon, set(actionsIfWeapon), aClass)
+                        newCharacters = list[Character]()
 
-                        newCharacters = []
-                        if(newCharacter.battleStats.firstLevelFeat):
-                            for feat in self.feats:
-                                if(feat.isAvailable(newCharacter)):
-                                    improvedCharacter = newCharacter.getCopy()
+                        newCharacters.extend(Test.doChoice(newCharacter)) # Choices from class
+
+                        newCharacterCopy = [*newCharacters] if not newCharacters == [] else [newCharacter]
+                        newCharacters.clear()
+
+                        if (newCharacterCopy[0].battleStats.firstLevelFeat):
+                            for character in newCharacterCopy:
+                                for feat in self.feats:
+                                    if not (feat.isAvailable(character)):
+                                        continue
+                                    improvedCharacter = character.getCopy()
                                     feat.applyToCharacter(improvedCharacter)
                                     newCharacters.append(improvedCharacter)
 
                         newCharacterCopy = [*newCharacters] if not newCharacters == [] else [newCharacter]
                         newCharacters.clear()
                         for character in newCharacterCopy:
-                            newCharacters.extend(Test.doChoice(character)) # Choices from feats or classes
+                            newCharacters.extend(Test.doChoice(character)) # Choices from feats 
+                                # (Done seperately from classes avoid cases where a choice is taken twice, like variant Human Fighter getting 
+                                # 2 Fighting styles despite only beeing able to use one)
+
 
                         for character in newCharacters:
                             if(newCharacter.attr.hasStartingChoice):
@@ -384,9 +394,10 @@ class Test:
             newCharacters.extend(tempCharacters)
         return newCharacters
     
-    def doChoice(characterBase: Character) ->  list[Character]:
+    def doChoice(characterBase: Character) -> list[Character]:
         getsChoice = characterBase.classes.choice
         choiceCharacters = [characterBase]
+
         if not(getsChoice == []):
             for choice in getsChoice:
                 nextChoice = [*choiceCharacters]
@@ -394,9 +405,10 @@ class Test:
                 for choiceCharacter in nextChoice:
                     choiceCharacters.extend(choice.onePerChoice(choiceCharacter))
             for choiceCharacter in choiceCharacters:
-                choiceCharacter.classes.choice = []
+                choiceCharacter.classes.choice = list[Choice]()
         if(choiceCharacters == []):
-            characterBase.classes.choice = []
+            characterBase.classes.choice = list[Choice]()
             characterBase.gottenFeatures.append("No applicable feature left")
-            return [characterBase]
+            choiceCharacters = [characterBase]
+            return choiceCharacters
         return choiceCharacters
