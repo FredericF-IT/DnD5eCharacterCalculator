@@ -1,7 +1,8 @@
 # DnD 5e Character Calculator
 ## Setup
-Requires Python 3. Written with v3.9.4  
-The following packages may already be installed. Only try the following if you get an import error.
+Requires Python 3.  
+Was written with Python v3.9.4 64-bit.  
+The following packages may already be installed. Only try installing them if you get an import error.
 ### Needed Python modules (Linux)
 python3 -m pip install -U matplotlib  
 sudo apt-get install python3-tk  
@@ -22,3 +23,9 @@ It is recommended to download the PDF, as the git viewer doesen't show/activate 
 ### 2. Creation
 Build specific Character, DpR is calculted live.  
 Not done yet.
+## Content
+There are only limited options available as of writing, I am uncertain of what sourcebooks will be added at all.  
+This will not include any dice-rolling mechanics, as this should not be used as a usable character sheet. 
+This constraint exists so that WotC do not sue me, as this free programm would compete with DnD Beyond.  
+It is only supposed to let you find a character you want to play.  
+This is why I would advise against forking this project with the goal of adding such a feature.
